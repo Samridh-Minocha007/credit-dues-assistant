@@ -26,6 +26,13 @@ def advance(days: float = 0, hours: float = 0) -> datetime:
     return now()
 
 
+def set_now(when: datetime) -> datetime:
+    """Jump to an exact moment (IST). Used by tests, e.g. "it is 10 pm"."""
+    global _offset
+    _offset = when - datetime.now(IST).replace(tzinfo=None)
+    return now()
+
+
 def reset() -> None:
     global _offset
     _offset = timedelta(0)

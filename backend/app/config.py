@@ -16,6 +16,8 @@ class Settings:
     # Default: backend/dues.db, wherever the server is started from.
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{(BACKEND_DIR / 'dues.db').as_posix()}")
     gemini_api_key: str | None = os.getenv("GEMINI_API_KEY") or None
+    # Where the simulated payment page lives (the React app). Used to build links.
+    public_base_url: str = os.getenv("PUBLIC_BASE_URL", "http://localhost:5173").rstrip("/")
 
 
 settings = Settings()

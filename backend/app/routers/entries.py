@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..schemas import CustomerSummary, DueOut, EntryIn, EntryOut
+from ..schemas import CustomerSummary, DueOut, EntryIn, EntryOut, MessageOut
 from ..services.customers import list_customers
 from ..services.entries import EntryError, ItemInput, record_entry
 from ..services.phone import InvalidPhone
@@ -41,4 +41,5 @@ def create_entry(body: EntryIn, db: Session = Depends(get_db)):
         ),
         due=DueOut.model_validate(result.due),
         is_new_customer=result.is_new_customer,
+        message=MessageOut.model_validate(result.message),
     )

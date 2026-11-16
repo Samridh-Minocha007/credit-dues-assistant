@@ -3,8 +3,11 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Customer
-from ..schemas import CustomerDetail, CustomerSummary, DueOut
+from ..schemas import CustomerDetail, CustomerSummary, DueOut, MessageOut, PaymentIn, PaymentOut, PaymentResultOut
 from ..services.customers import CustomerRow, list_customers
+from ..services.messaging import pay_link
+from ..services.money import to_paise
+from ..services.payments import PaymentError, record_payment
 from ..services.shop import get_or_create_shop
 
 router = APIRouter(prefix="/api/customers", tags=["customers"])
@@ -28,12 +31,17 @@ def search_customers(q: str | None = Query(default=None, max_length=50), db: Ses
     return [_summary(r) for r in list_customers(db, get_or_create_shop(db), q=q)]
 
 
-@router.get("/{customer_id}", response_model=CustomerDetail)
-def get_customer(customer_id: int, db: Session = Depends(get_db)):
+def _get(db: Session, customer_id: int) -> Customer:
     shop = get_or_create_shop(db)
     c = db.get(Customer, customer_id)
     if c is None or c.shop_id != shop.id:
         raise HTTPException(404, "Customer not found")
+    return c
+
+
+@router.get("/{customer_id}", response_model=CustomerDetail)
+def get_customer(customer_id: int, db: Session = Depends(get_db)):
+    c = _get(db, customer_id)
     open_dues = [d for d in c.dues if d.status == "open"]
     return CustomerDetail(
         id=c.id,
@@ -46,5 +54,21 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
         consent_at=c.consent_at,
         consent_method=c.consent_method,
         created_at=c.created_at,
-        dues=[DueOut.model_validate(d) for d in reversed(c.dues)],  # newest first
+        pay_link=pay_link(c) if c.pay_token else None,
+        # Newest first everywhere, so the latest activity is at the top.
+        dues=[DueOut.model_validate(d) for d in reversed(c.dues)],
+        payments=[PaymentOut.model_validate(p) for p in reversed(c.payments)],
+        messages=[MessageOut.model_validate(m) for m in reversed(c.messages)],
     )
+
+
+@router.post("/{customer_id}/payments", response_model=PaymentResultOut)
+def record_cash_payment(customer_id: int, body: PaymentIn, db: Session = Depends(get_db)):
+    """Customer paid at the counter (cash or their own UPI). Same rules as the
+    payment link: oldest dues are cleared first."""
+    c = _get(db, customer_id)
+    try:
+        r = record_payment(db, get_or_create_shop(db), c, to_paise(body.amount), source="cash")
+    except PaymentError as e:
+        raise HTTPException(422, str(e))
+    return PaymentResultOut.build(r)

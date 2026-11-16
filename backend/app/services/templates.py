@@ -32,3 +32,20 @@ def validate_template(template: str) -> None:
 def render(template: str, *, name: str | None, shop: str, amount: str, link: str) -> str:
     body = template.format(name=name or "ji", shop=shop, amount=amount, link=link)
     return f"{body} {OPT_OUT_LINE}"
+
+
+# Fixed wording for transactional messages (a receipt for something that just
+# happened at the counter). Unlike the weekly reminder, these are not
+# editable: they only state facts, so there is nothing to approve.
+def bill_notice(*, name: str | None, shop: str, credit: str, total: str, link: str | None) -> str:
+    # No link if the shop hasn't added its UPI ID yet: customers pay at the counter.
+    how = f"Pay anytime on UPI here: {link}" if link else "You can pay at the shop anytime."
+    return (
+        f"Namaste {name or 'ji'}, {shop} has noted Rs {credit} on credit today. "
+        f"Total pending: Rs {total}. {how} {OPT_OUT_LINE}"
+    )
+
+
+def payment_receipt(*, name: str | None, shop: str, paid: str, remaining: str) -> str:
+    rest = "Your account is fully cleared." if remaining == "0" else f"Remaining balance: Rs {remaining}."
+    return f"Thank you {name or 'ji'}! {shop} received Rs {paid}. {rest}"

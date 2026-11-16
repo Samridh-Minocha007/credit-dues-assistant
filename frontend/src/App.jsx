@@ -1,51 +1,98 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api/client.js";
-import QuickEntry from "./pages/QuickEntry.jsx";
+import { IconActivity, IconCustomers, IconSettings, IconToday } from "./icons.jsx";
+import Today from "./pages/Today.jsx";
 import Customers from "./pages/Customers.jsx";
-import Setup from "./pages/Setup.jsx";
+import Activity from "./pages/Activity.jsx";
+import Settings from "./pages/Settings.jsx";
+import CustomerPhone from "./pages/CustomerPhone.jsx";
 
-// Simple tabs instead of a router library: three screens don't need URLs yet.
-const TABS = [
-  ["entry", "New entry"],
-  ["customers", "Customers"],
-  ["setup", "Setup"],
+// Three places for daily work, plus settings (used once, so it sits apart).
+const PLACES = [
+  { key: "today", label: "Today", Icon: IconToday },
+  { key: "customers", label: "Customers", Icon: IconCustomers },
+  { key: "activity", label: "Activity", Icon: IconActivity },
 ];
 
 export default function App() {
-  const [tab, setTab] = useState("entry");
-  const [approved, setApproved] = useState(true);
+  // Customer-facing demo pages, separate from the shopkeeper's app:
+  //   /pay/<token>    the link inside the message: opens the (simulated) UPI app
+  //   /phone/<token>  the customer's (simulated) phone with their chat
+  const m = window.location.pathname.match(/^\/(pay|phone)\/([\w-]+)/);
+  if (m) return <CustomerPhone token={m[2]} startOnPay={m[1] === "pay"} />;
+  return <ShopApp />;
+}
 
-  // Re-check approval whenever the tab changes, so the banner updates after Setup.
-  useEffect(() => {
-    api.getSettings().then((s) => setApproved(s.approved)).catch(() => {});
-  }, [tab]);
+function ShopApp() {
+  const [view, setView] = useState("today");
+  const [shop, setShop] = useState(null);
+  const [toCheck, setToCheck] = useState(0);
+
+  // Shop settings and the "payments to check" count are shown in the shell,
+  // so refresh them whenever the screen changes or something is saved.
+  const refresh = useCallback(() => {
+    api.getSettings().then(setShop).catch(() => {});
+    api.getIncoming("needs_review").then((r) => setToCheck(r.length)).catch(() => {});
+  }, []);
+  useEffect(refresh, [view, refresh]);
+
+  const tabs = PLACES.map(({ key, label, Icon }) => (
+    <button key={key} className="tab" aria-current={view === key ? "page" : undefined} onClick={() => setView(key)}>
+      <Icon />
+      {label}
+      {key === "today" && toCheck > 0 && (
+        <span className="dot" aria-label={`${toCheck} to check`}>
+          {toCheck}
+        </span>
+      )}
+    </button>
+  ));
+  const brand = (
+    <div className="brand">
+      <strong>{shop?.name || "Your shop"}</strong>
+      <span>Concept prototype, all simulated</span>
+    </div>
+  );
 
   return (
-    <div className="app">
-      <header>
-        <h1>Credit dues assistant</h1>
-        <span className="badge">Concept prototype · messages &amp; payments simulated</span>
-      </header>
-
-      {!approved && tab !== "setup" && (
-        <button className="banner" onClick={() => setTab("setup")}>
-          Reminders are off until you approve the wording and schedule. Tap to set up →
+    <div className="shell">
+      {/* Wide screens: left rail with settings at the bottom. */}
+      <aside className="side">
+        {brand}
+        <nav className="tabbar" aria-label="Main">
+          {tabs}
+        </nav>
+        <button className="tab settings-link" aria-current={view === "settings" ? "page" : undefined} onClick={() => setView("settings")}>
+          <IconSettings />
+          Settings
         </button>
-      )}
+      </aside>
 
-      <nav>
-        {TABS.map(([key, label]) => (
-          <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
-            {label}
+      <div className="main">
+        {/* Phones: top bar with settings, tabs along the bottom. */}
+        <header className="topbar">
+          {brand}
+          <button
+            className="icon-btn"
+            aria-label="Settings"
+            aria-pressed={view === "settings"}
+            onClick={() => setView(view === "settings" ? "today" : "settings")}
+          >
+            <IconSettings />
           </button>
-        ))}
-      </nav>
+        </header>
 
-      <main>
-        {tab === "entry" && <QuickEntry />}
-        {tab === "customers" && <Customers />}
-        {tab === "setup" && <Setup onApprovedChange={setApproved} />}
-      </main>
+        <main className="content">
+          {view === "today" && <Today shop={shop} onChange={refresh} go={setView} />}
+          {view === "customers" && <Customers />}
+          {view === "activity" && <Activity />}
+          {view === "settings" && <Settings onSaved={refresh} />}
+        </main>
+
+        <nav className="tabbar mobile-tabs" aria-label="Main">
+          {tabs}
+        </nav>
+      </div>
     </div>
   );
 }

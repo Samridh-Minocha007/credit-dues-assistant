@@ -23,7 +23,58 @@ export const api = {
   createEntry: (entry) => request("POST", "/api/entries", entry),
   searchCustomers: (q) => request("GET", `/api/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`),
   getCustomer: (id) => request("GET", `/api/customers/${id}`),
+  recordCashPayment: (id, amount) => request("POST", `/api/customers/${id}/payments`, { amount }),
+  getMessages: (customerId) => request("GET", `/api/messages${customerId ? `?customer_id=${customerId}` : ""}`),
+  getPayPage: (token) => request("GET", `/api/pay/${token}`),
+  getIncoming: (status) => request("GET", `/api/incoming-payments${status ? `?status=${status}` : ""}`),
+  confirmIncoming: (id, customerId) => request("POST", `/api/incoming-payments/${id}/confirm`, { customer_id: customerId }),
+  dismissIncoming: (id) => request("POST", `/api/incoming-payments/${id}/dismiss`),
+  // Simulation only:
+  bankNotification: (payment) => request("POST", "/api/sim/bank-notification", payment),
+  getPhone: (token) => request("GET", `/api/sim/phone/${token}`),
 };
+
+// Plain-language label for a message's status (see the messages table).
+export function messageStatus(m) {
+  switch (m.status) {
+    case "sent_sim":
+      return "Sent (simulated)";
+    case "scheduled":
+      return `Held for quiet hours, goes at ${new Date(m.scheduled_for).toLocaleString("en-IN", { weekday: "short", hour: "2-digit", minute: "2-digit" })}`;
+    case "blocked_opt_out":
+      return "Not sent: customer opted out";
+    case "received":
+      return "Received";
+    default:
+      return m.status;
+  }
+}
+
+export const MESSAGE_KIND = {
+  bill_notice: "Bill notice",
+  payment_receipt: "Payment receipt",
+  weekly_reminder: "Weekly reminder",
+  promise_followup: "Promise follow-up",
+  reply: "Customer reply",
+};
+
+// "10:59 pm" for today, "Yesterday", or "16 Nov" for older.
+export function shortWhen(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const days = Math.round((new Date(now.toDateString()) - new Date(d.toDateString())) / 86_400_000);
+  if (days === 0) return d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+  if (days === 1) return "Yesterday";
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+export function initial(name) {
+  return (name || "?").trim().slice(0, 1).toUpperCase();
+}
+
+export function formatTime(iso) {
+  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
 
 // Amounts come back from the API as integer paise. 12050 -> "₹120.50", 50000 -> "₹500".
 export function rupees(paise) {

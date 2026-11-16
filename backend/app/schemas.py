@@ -10,6 +10,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from .services.upi import UPI_ID
+
 HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 Rupees = Decimal  # alias for readability
 
@@ -30,6 +32,7 @@ class SettingsOut(BaseModel):
     quiet_end: str
     max_reminders_per_month: int
     reply_parsing_enabled: bool
+    upi_id: str | None
     # Extra fields computed by the router, not stored:
     approved: bool = False
     preview: str = ""
@@ -49,6 +52,17 @@ class SettingsUpdate(BaseModel):
     quiet_end: str | None = None
     max_reminders_per_month: int | None = Field(default=None, ge=1, le=8)
     reply_parsing_enabled: bool | None = None
+    upi_id: str | None = Field(default=None, max_length=100)
+
+    @field_validator("upi_id")
+    @classmethod
+    def _upi(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip().lower()
+        if not UPI_ID.match(v):
+            raise ValueError("UPI ID looks like name@bank, e.g. sharmastore@okaxis")
+        return v
 
     @field_validator("reminder_time", "quiet_start", "quiet_end")
     @classmethod
@@ -102,14 +116,116 @@ class CustomerSummary(BaseModel):
     opted_out: bool
 
 
+class MessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    customer_id: int
+    direction: str
+    kind: str
+    body: str
+    status: str
+    scheduled_for: datetime | None
+    sent_at: datetime | None
+    created_at: datetime
+
+
+class OutboxRow(MessageOut):
+    customer_name: str | None
+    customer_phone: str
+
+
 class EntryOut(BaseModel):
     customer: CustomerSummary
     due: DueOut
     is_new_customer: bool
+    message: MessageOut
+
+
+class PaymentIn(BaseModel):
+    amount: Rupees = Field(gt=0, max_digits=10, decimal_places=2)
+
+
+class PaymentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    amount_paise: int
+    source: str
+    paid_at: datetime
+
+
+class PaymentResultOut(BaseModel):
+    payment: PaymentOut
+    balance_paise: int
+    receipt: MessageOut
+
+    @classmethod
+    def build(cls, r) -> "PaymentResultOut":
+        return cls(
+            payment=PaymentOut.model_validate(r.payment),
+            balance_paise=r.balance_paise,
+            receipt=MessageOut.model_validate(r.receipt),
+        )
+
+
+class PayPageOut(BaseModel):
+    """What the payment link page may show. Deliberately no phone number:
+    anyone holding the link sees only the shop, a name and the amount."""
+
+    shop_name: str
+    shop_upi_id: str | None
+    customer_name: str | None
+    balance_paise: int
+    upi_link: str | None  # opens the customer's UPI app, pre-filled
+    note: str
+    # Demo only: plausible defaults for the simulated UPI app's "paying from".
+    demo_payer_vpa: str
+    demo_payer_name: str
+
+
+class BankNotificationIn(BaseModel):
+    """SIMULATED: what the merchant app / bank tells us when money lands in the
+    shop's UPI account. Note: no customer id. Matching has to work it out."""
+
+    payer_vpa: str = Field(min_length=3, max_length=100)
+    payer_name: str | None = Field(default=None, max_length=100)
+    amount: Rupees = Field(gt=0, max_digits=10, decimal_places=2)
+    note: str | None = Field(default=None, max_length=100)
+
+
+class IncomingPaymentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    payer_vpa: str
+    payer_name: str | None
+    amount_paise: int
+    note: str | None
+    received_at: datetime
+    status: str
+    match_reason: str
+    customer_id: int | None
+    customer_name: str | None = None
+    customer_balance_paise: int | None = None
+    payment_id: int | None
+
+
+class ConfirmIn(BaseModel):
+    customer_id: int
+
+
+class PhoneOut(BaseModel):
+    """SIMULATED customer phone: the chat as the customer would see it."""
+
+    shop_name: str
+    customer_name: str | None
+    pay_token: str
+    messages: list[MessageOut]
 
 
 class CustomerDetail(CustomerSummary):
     consent_at: datetime
     consent_method: str
     created_at: datetime
+    pay_link: str | None
     dues: list[DueOut]
+    payments: list[PaymentOut]
+    messages: list[MessageOut]
