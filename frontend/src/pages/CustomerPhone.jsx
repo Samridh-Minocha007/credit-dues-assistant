@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, initial } from "../api/client.js";
+import { api, appNow, initial, setClockOffset, timeOf } from "../api/client.js";
 import { IconRefresh } from "../icons.jsx";
 import UpiApp from "./UpiApp.jsx";
 
@@ -10,13 +10,34 @@ export default function CustomerPhone({ token, startOnPay = false }) {
   const [phone, setPhone] = useState(null);
   const [error, setError] = useState("");
   const [paying, setPaying] = useState(startOnPay);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function send(text) {
+    if (!text.trim()) return;
+    setSending(true);
+    try {
+      setPhone(await api.sendReply(token, text));
+      setDraft("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSending(false);
+    }
+  }
 
   const load = () => api.getPhone(token).then(setPhone).catch((e) => setError(e.message));
+  const [, setTick] = useState(0);
   useEffect(() => {
     load();
+    // Use the demo clock, so the phone shows the same time as the shop's app.
+    api.getClock().then((c) => {
+      setClockOffset(c.offset_seconds);
+      setTick((t) => t + 1);
+    });
   }, [token]);
 
-  const clock = new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).replace(/\s?[ap]m/i, "");
+  const clock = appNow().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).replace(/\s?[ap]m/i, "");
 
   return (
     <div className="demo-stage">
@@ -55,13 +76,36 @@ export default function CustomerPhone({ token, startOnPay = false }) {
                 {error && <div className="notice error">{error}</div>}
                 {phone && phone.messages.length === 0 && <span className="day-pill">No messages yet</span>}
                 {phone && phone.messages.length > 0 && <span className="day-pill">Messages from {phone.shop_name}</span>}
-                {phone?.messages.map((m) => (
-                  <Bubble key={m.id} m={m} onPay={() => setPaying(true)} />
-                ))}
+                {phone?.messages.map((m) =>
+                  m.direction === "in" ? (
+                    <div key={m.id} className="bubble-out">
+                      {m.body}
+                      <div className="meta">{timeOf(m.created_at)}</div>
+                    </div>
+                  ) : (
+                    <Bubble key={m.id} m={m} onPay={() => setPaying(true)} />
+                  )
+                )}
               </div>
-              <div className="chat-compose">
-                <div>Replying comes in a later version</div>
-              </div>
+              <form
+                className="chat-compose"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  send(draft);
+                }}
+              >
+                <div className="quick" aria-label="Try a reply">
+                  {["STOP", "START", "kal dunga"].map((t) => (
+                    <button type="button" key={t} onClick={() => send(t)} disabled={sending}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <div className="compose-row">
+                  <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Message the shop" aria-label="Message the shop" />
+                  <button disabled={sending || !draft.trim()}>Send</button>
+                </div>
+              </form>
             </>
           )}
         </div>

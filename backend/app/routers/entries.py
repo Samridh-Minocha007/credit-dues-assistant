@@ -38,6 +38,7 @@ def create_entry(body: EntryIn, db: Session = Depends(get_db)):
             open_dues=row.open_dues,
             oldest_open_due_at=row.oldest_open_due_at,
             opted_out=row.customer.opted_out_at is not None,
+            deleted=False,
         ),
         due=DueOut.model_validate(result.due),
         is_new_customer=result.is_new_customer,

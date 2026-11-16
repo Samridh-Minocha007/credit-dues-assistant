@@ -114,6 +114,7 @@ class CustomerSummary(BaseModel):
     open_dues: int
     oldest_open_due_at: datetime | None
     opted_out: bool
+    deleted: bool = False
 
 
 class MessageOut(BaseModel):
@@ -226,6 +227,32 @@ class CustomerDetail(CustomerSummary):
     consent_method: str
     created_at: datetime
     pay_link: str | None
+    deleted_at: datetime | None
     dues: list[DueOut]
     payments: list[PaymentOut]
     messages: list[MessageOut]
+
+
+class ReplyIn(BaseModel):
+    """SIMULATED: a message the customer sends to the shop."""
+
+    text: str = Field(min_length=1, max_length=300)
+
+
+class ClockOut(BaseModel):
+    now: datetime
+    offset_seconds: int  # how far the demo clock is ahead of real time
+
+
+class AdvanceIn(BaseModel):
+    days: int = Field(default=0, ge=0, le=120)
+    hours: int = Field(default=0, ge=0, le=72)
+
+
+class RunOut(BaseModel):
+    now: datetime
+    delivered: int
+    reminders_sent: int
+    blocked_cap: int
+    cancelled_paid: int
+    slots: list[datetime]

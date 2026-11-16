@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api/client.js";
+import { api, setClockOffset } from "./api/client.js";
 import { IconActivity, IconCustomers, IconSettings, IconToday } from "./icons.jsx";
 import Today from "./pages/Today.jsx";
 import Customers from "./pages/Customers.jsx";
@@ -31,6 +31,7 @@ function ShopApp() {
   // Shop settings and the "payments to check" count are shown in the shell,
   // so refresh them whenever the screen changes or something is saved.
   const refresh = useCallback(() => {
+    api.getClock().then((c) => setClockOffset(c.offset_seconds)).catch(() => {});
     api.getSettings().then(setShop).catch(() => {});
     api.getIncoming("needs_review").then((r) => setToCheck(r.length)).catch(() => {});
   }, []);

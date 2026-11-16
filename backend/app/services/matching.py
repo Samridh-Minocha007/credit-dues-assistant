@@ -117,7 +117,10 @@ def handle_incoming(
         return inc
 
     # --- 3. Weak hints: exact amount owed, or same first name ---
-    owing = [(cust, customer_balance(cust)) for cust in db.scalars(select(Customer).where(Customer.shop_id == shop.id))]
+    owing = [
+        (cust, customer_balance(cust))
+        for cust in db.scalars(select(Customer).where(Customer.shop_id == shop.id, Customer.deleted_at.is_(None)))
+    ]
     owing = [(cust, bal) for cust, bal in owing if bal > 0]
     payer_first = _first_word(payer_name)
     hints: dict[int, tuple[Customer, str]] = {}

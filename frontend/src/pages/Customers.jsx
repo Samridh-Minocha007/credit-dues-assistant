@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
-import { MESSAGE_KIND, api, daysAgo, initial, rupees, shortWhen } from "../api/client.js";
+import { MESSAGE_KIND, api, daysAgo, initial, messageStatus, rupees, shortWhen } from "../api/client.js";
 import { IconBack, IconPhone } from "../icons.jsx";
+
+// After a delete the phone number is gone (replaced by a placeholder), so
+// never show it as a name.
+const displayName = (c) => c.name || (c.deleted ? "Deleted customer" : c.phone);
 
 export default function Customers() {
   const [selected, setSelected] = useState(null);
@@ -43,16 +47,16 @@ function CustomerList({ onOpen }) {
             <li key={r.id}>
               <button className="row" onClick={() => onOpen(r.id)}>
                 <span className="initial" aria-hidden>
-                  {initial(r.name || r.phone)}
+                  {initial(displayName(r))}
                 </span>
                 <span className="row-main">
                   <span className="row-title" style={{ display: "block" }}>
-                    {r.name || r.phone}
+                    {displayName(r)}
                   </span>
                   <span className="row-sub">
-                    {r.name ? r.phone : "No name saved"}
+                    {r.deleted ? "Personal data deleted" : r.name ? r.phone : "No name saved"}
                     {r.oldest_open_due_at ? `, oldest bill ${daysAgo(r.oldest_open_due_at)}` : ""}
-                    {r.opted_out ? ", opted out of messages" : ""}
+                    {r.opted_out && !r.deleted ? ", messages stopped" : ""}
                   </span>
                 </span>
                 <span className="row-end">
@@ -107,9 +111,11 @@ function CustomerDetail({ id, onBack }) {
         <IconBack /> All customers
       </button>
       <div className="page-head" style={{ marginBottom: 0 }}>
-        <h1>{c.name || c.phone}</h1>
+        <h1>{displayName(c)}</h1>
         <p>
-          {c.name && `${c.phone}. `}Customer since {new Date(c.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.
+          {c.deleted ? "Personal data deleted on request. " : c.name ? `${c.phone}. ` : ""}
+          Customer since {new Date(c.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.
+          {c.opted_out && !c.deleted && " Messages stopped."}
         </p>
       </div>
 
@@ -118,7 +124,7 @@ function CustomerDetail({ id, onBack }) {
           <div className="muted small">Owes you</div>
           <div className={`money ${c.balance_paise ? "due" : "paid"}`}>{rupees(c.balance_paise)}</div>
         </div>
-        {c.balance_paise > 0 && (
+        {c.balance_paise > 0 && !c.deleted && (
           <form className="pay-inline" onSubmit={recordCash}>
             <input className="input" inputMode="decimal" placeholder="Amount ₹" value={cash} onChange={(e) => setCash(e.target.value)} aria-label="Amount paid at the counter" />
             <button className="btn btn-primary" disabled={!cash}>
@@ -136,6 +142,8 @@ function CustomerDetail({ id, onBack }) {
         </a>
       )}
 
+      {!c.deleted && <CustomerControls c={c} onChange={setC} />}
+
       <section className="section" aria-labelledby="hist-h">
         <div className="section-head">
           <h2 id="hist-h">History</h2>
@@ -145,9 +153,11 @@ function CustomerDetail({ id, onBack }) {
             <HistoryRow key={i} h={h} />
           ))}
         </ul>
-        <p className="hint" style={{ marginTop: 14 }}>
-          Phone number given to the shop on {new Date(c.consent_at).toLocaleDateString("en-IN")}, which counts as consent to payment messages.
-        </p>
+        {!c.deleted && (
+          <p className="hint" style={{ marginTop: 14 }}>
+            Phone number given to the shop on {new Date(c.consent_at).toLocaleDateString("en-IN")}, which counts as consent to payment messages.
+          </p>
+        )}
       </section>
     </>
   );
@@ -184,16 +194,74 @@ function HistoryRow({ h }) {
     );
   }
   const m = h.m;
+  const inbound = m.direction === "in";
   return (
     <li className="is-message">
       <span className="when">{shortWhen(h.at)}</span>
       <div>
         <div className="what">
-          {MESSAGE_KIND[m.kind] || "Message"} {m.status === "scheduled" ? <span className="tag held">waiting for morning</span> : m.status === "blocked_opt_out" ? <span className="tag">not sent, opted out</span> : <span className="tag">sent</span>}
+          {inbound ? "They replied" : MESSAGE_KIND[m.kind] || "Message"}
+          {!inbound && <span className={`tag ${m.status === "scheduled" ? "held" : ""}`}>{messageStatus(m)}</span>}
         </div>
-        <div className="msg">{m.body}</div>
+        <div className="msg">{inbound ? `“${m.body}”` : m.body}</div>
       </div>
       <span />
     </li>
+  );
+}
+
+// Stop/resume messages, and delete personal data on the customer's request.
+function CustomerControls({ c, onChange }) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState("");
+  const first = c.name ? c.name.split(" ")[0] : "this customer";
+
+  const act = async (fn) => {
+    setError("");
+    try {
+      onChange(await fn());
+      setConfirming(false);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  return (
+    <div className="controls">
+      <div className="controls-row">
+        {c.opted_out ? (
+          <button className="btn" onClick={() => act(() => api.optIn(c.id))}>
+            Resume messages
+          </button>
+        ) : (
+          <button className="btn" onClick={() => act(() => api.optOut(c.id))}>
+            Stop messages
+          </button>
+        )}
+        {!confirming && (
+          <button className="btn-text danger" onClick={() => setConfirming(true)}>
+            Delete {first}’s data
+          </button>
+        )}
+      </div>
+      {confirming && (
+        <div className="confirm">
+          <p>
+            <strong>Delete {first}’s personal data?</strong> Their phone number, item lists, messages and saved UPI IDs are
+            erased and they won’t be contacted again. Their name, amounts and dates stay, so you can check old payments.
+            {c.balance_paise > 0 && ` They still owe ${rupees(c.balance_paise)}.`} This can’t be undone.
+          </p>
+          <div className="controls-row">
+            <button className="btn btn-danger" onClick={() => act(() => api.deleteCustomer(c.id))}>
+              Delete data
+            </button>
+            <button className="btn-text" onClick={() => setConfirming(false)}>
+              Keep it
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <div className="notice error">{error}</div>}
+    </div>
   );
 }

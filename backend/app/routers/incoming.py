@@ -17,7 +17,8 @@ router = APIRouter(prefix="/api/incoming-payments", tags=["incoming payments"])
 def to_out(inc: IncomingPayment) -> IncomingPaymentOut:
     out = IncomingPaymentOut.model_validate(inc)
     if inc.customer is not None:
-        out.customer_name = inc.customer.name or inc.customer.phone
+        c = inc.customer
+        out.customer_name = c.name or ("Deleted customer" if c.deleted_at else c.phone)
         out.customer_balance_paise = customer_balance(inc.customer)
     return out
 

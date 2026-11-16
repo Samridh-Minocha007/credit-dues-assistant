@@ -8,6 +8,7 @@ from ..services.customers import CustomerRow, list_customers
 from ..services.messaging import pay_link
 from ..services.money import to_paise
 from ..services.payments import PaymentError, record_payment
+from ..services.privacy import PrivacyError, delete_customer_data, opt_in, opt_out
 from ..services.shop import get_or_create_shop
 
 router = APIRouter(prefix="/api/customers", tags=["customers"])
@@ -22,6 +23,7 @@ def _summary(r: CustomerRow) -> CustomerSummary:
         open_dues=r.open_dues,
         oldest_open_due_at=r.oldest_open_due_at,
         opted_out=r.customer.opted_out_at is not None,
+        deleted=r.customer.deleted_at is not None,
     )
 
 
@@ -54,6 +56,8 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
         consent_at=c.consent_at,
         consent_method=c.consent_method,
         created_at=c.created_at,
+        deleted=c.deleted_at is not None,
+        deleted_at=c.deleted_at,
         pay_link=pay_link(c) if c.pay_token else None,
         # Newest first everywhere, so the latest activity is at the top.
         dues=[DueOut.model_validate(d) for d in reversed(c.dues)],
@@ -72,3 +76,32 @@ def record_cash_payment(customer_id: int, body: PaymentIn, db: Session = Depends
     except PaymentError as e:
         raise HTTPException(422, str(e))
     return PaymentResultOut.build(r)
+
+
+
+@router.post("/{customer_id}/opt-out", response_model=CustomerDetail)
+def stop_messages(customer_id: int, db: Session = Depends(get_db)):
+    """Shopkeeper stops all messages to this customer (e.g. they asked in person)."""
+    opt_out(db, _get(db, customer_id))
+    db.commit()
+    return get_customer(customer_id, db)
+
+
+@router.post("/{customer_id}/opt-in", response_model=CustomerDetail)
+def resume_messages(customer_id: int, db: Session = Depends(get_db)):
+    try:
+        opt_in(db, _get(db, customer_id))
+    except PrivacyError as e:
+        raise HTTPException(422, str(e))
+    db.commit()
+    return get_customer(customer_id, db)
+
+
+@router.delete("/{customer_id}", response_model=CustomerDetail)
+def delete_customer(customer_id: int, db: Session = Depends(get_db)):
+    """Erase personal data on the customer's request. Keeps name, amounts and dates."""
+    try:
+        delete_customer_data(db, _get(db, customer_id))
+    except PrivacyError as e:
+        raise HTTPException(422, str(e))
+    return get_customer(customer_id, db)

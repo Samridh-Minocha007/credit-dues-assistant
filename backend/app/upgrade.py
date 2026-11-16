@@ -17,6 +17,9 @@ from .models import Customer
 ADDED_COLUMNS = [
     ("customers", "pay_token", "VARCHAR(32)"),  # slice 2
     ("shops", "upi_id", "VARCHAR(100)"),  # slice 2
+    ("shops", "scheduler_last_run_at", "DATETIME"),  # slice 3
+    ("shops", "demo_clock_offset_s", "INTEGER NOT NULL DEFAULT 0"),  # slice 3
+    ("customers", "deleted_at", "DATETIME"),  # slice 3
 ]
 
 

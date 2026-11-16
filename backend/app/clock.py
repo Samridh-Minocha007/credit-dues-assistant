@@ -33,6 +33,15 @@ def set_now(when: datetime) -> datetime:
     return now()
 
 
+def offset_seconds() -> int:
+    return int(_offset.total_seconds())
+
+
+def set_offset(seconds: int) -> None:
+    global _offset
+    _offset = timedelta(seconds=seconds or 0)
+
+
 def reset() -> None:
     global _offset
     _offset = timedelta(0)

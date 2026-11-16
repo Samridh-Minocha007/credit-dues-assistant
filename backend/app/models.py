@@ -54,6 +54,14 @@ class Shop(Base):
     # Customers pay straight to it; we never hold money.
     upi_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    # When the reminder timer last ran. Each run handles every weekly slot
+    # since then, so nothing is missed if the server was off for a while
+    # (or the demo clock jumped ahead).
+    scheduler_last_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # DEMO ONLY: how far the demo clock has been moved forward, in seconds.
+    # Saved so a server restart doesn't snap the demo back to real time.
+    demo_clock_offset_s: Mapped[int] = mapped_column(Integer, default=0)
+
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -77,6 +85,10 @@ class Customer(Base):
     # web link in the message.) Random rather than the customer id, so nobody
     # can open someone else's page by changing a number in the URL.
     pay_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
+    # Set when the customer's personal data is deleted on request. We keep
+    # their name, amounts and dates (owner's rule, see docs/decisions.md) and
+    # erase the phone number, items, messages and UPI IDs.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     dues: Mapped[list["Due"]] = relationship(back_populates="customer", order_by="Due.created_at")
     payments: Mapped[list["Payment"]] = relationship(back_populates="customer", order_by="Payment.paid_at")
@@ -153,7 +165,8 @@ class Message(Base):
     # bill_notice | payment_receipt | weekly_reminder | promise_followup | reply
     kind: Mapped[str] = mapped_column(String(30))
     body: Mapped[str] = mapped_column(String(500))
-    # sent_sim | scheduled (waiting for quiet hours to end) | blocked_opt_out | received
+    # sent_sim | scheduled (held for quiet hours) | blocked_opt_out | blocked_cap
+    # (monthly limit reached) | cancelled_paid (paid before it went out) | received (inbound)
     status: Mapped[str] = mapped_column(String(30))
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

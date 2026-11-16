@@ -49,3 +49,11 @@ def bill_notice(*, name: str | None, shop: str, credit: str, total: str, link: s
 def payment_receipt(*, name: str | None, shop: str, paid: str, remaining: str) -> str:
     rest = "Your account is fully cleared." if remaining == "0" else f"Remaining balance: Rs {remaining}."
     return f"Thank you {name or 'ji'}! {shop} received Rs {paid}. {rest}"
+
+
+def opt_out_confirm(*, shop: str) -> str:
+    return f"You won't get any more payment messages from {shop}. Reply START if you change your mind."
+
+
+def opt_in_confirm(*, shop: str) -> str:
+    return f"Payment messages from {shop} are back on. Reply STOP any time to stop them."

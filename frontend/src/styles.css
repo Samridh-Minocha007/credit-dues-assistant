@@ -298,7 +298,7 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 .pay-card span { font-size: 12px; color: var(--ink-2); }
 .pay-card .go { background: var(--ink); color: white; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
 .chat-compose { padding: 10px 12px 18px; background: #fbfaf7; border-top: 1px solid #e4e1d9; }
-.chat-compose div { border: 1px solid #e4e1d9; border-radius: 999px; padding: 9px 14px; font-size: 14px; color: var(--ink-3); background: white; }
+
 
 /* UPI app */
 .upi { flex: 1; display: flex; flex-direction: column; background: white; overflow-y: auto; }
@@ -321,3 +321,44 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 .upi-done .tick { width: 72px; height: 72px; border-radius: 50%; background: var(--paid); color: white; display: grid; place-items: center; animation: pop 0.35s ease-out; }
 .upi-done h2 { font-size: var(--t-xl); margin-top: 8px; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ---------- customer controls ---------- */
+.controls { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.controls-row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.btn-text.danger { color: var(--due); text-decoration-color: #f0c9c6; }
+.btn-danger { background: var(--due); border-color: var(--due); color: white; }
+.btn-danger:hover { background: #962019; border-color: #962019; }
+.confirm { border: 1.5px solid #f0c9c6; background: var(--danger-soft); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: var(--t-sm); }
+
+/* ---------- demo clock (Activity) ---------- */
+.demo-clock {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  border: 1px dashed #c9ccd3; border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 18px;
+}
+.demo-clock .now { flex: 1 1 200px; font-size: var(--t-sm); }
+.demo-clock .now strong { display: block; font-size: var(--t-md); }
+.demo-clock .btn { min-height: 40px; padding: 0 14px; }
+
+/* ---------- customer phone: their own messages, quick replies ---------- */
+.bubble-out {
+  align-self: flex-end; max-width: 80%; background: #dfe7f5; border-radius: 16px 4px 16px 16px;
+  padding: 8px 12px 6px; font-size: 15px;
+}
+.bubble-out .meta { font-size: 11px; color: var(--ink-3); text-align: right; margin-top: 2px; }
+.quick { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.quick button { border: 1px solid #e4e1d9; background: white; border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
+.compose-row { display: flex; gap: 8px; }
+.compose-row input { flex: 1; border: 1px solid #e4e1d9; border-radius: 999px; padding: 9px 14px; font-size: 14px; background: white; outline: none; }
+.compose-row input:focus { border-color: var(--ink-3); }
+.compose-row button { border: none; background: var(--ink); color: white; border-radius: 999px; padding: 0 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.compose-row button:disabled { background: #c9cdd6; }
+
+/* ---------- Activity: grouped by customer ---------- */
+.group .row-phone { font-weight: 400; color: var(--ink-2); font-size: var(--t-sm); margin-left: 8px; }
+.group .row-end { display: flex; align-items: center; gap: 8px; }
+.group .chev { color: var(--ink-3); transition: transform 0.15s ease; }
+.group.is-open .chev { transform: rotate(180deg); }
+.group.is-open > .row { background: rgba(31, 42, 68, 0.03); }
+.group-body { border-top: none; margin: 0 0 6px 52px; }
+.group-body li:last-child { border-bottom: none; }
+@media (max-width: 520px) { .group-body { margin-left: 0; } .group-body li { grid-template-columns: 62px 1fr auto; } }
