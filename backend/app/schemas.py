@@ -5,7 +5,7 @@ Convention: amounts coming IN are rupees (what the shopkeeper types, e.g.
 there is never any doubt which unit a number is in.
 """
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -222,6 +222,27 @@ class PhoneOut(BaseModel):
     messages: list[MessageOut]
 
 
+class PromiseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    promised_date: date
+    source: str
+    raw_text: str | None
+    status: str
+    followup_sent_at: datetime | None
+    created_at: datetime
+
+
+class CallOutcomeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    outcome: str
+    note: str | None
+    balance_paise: int
+    promise_id: int | None
+    created_at: datetime
+
+
 class CustomerDetail(CustomerSummary):
     consent_at: datetime
     consent_method: str
@@ -231,6 +252,11 @@ class CustomerDetail(CustomerSummary):
     dues: list[DueOut]
     payments: list[PaymentOut]
     messages: list[MessageOut]
+    # reminders | promised | to_call | disputed | None (owes nothing)
+    collection_state: str | None = None
+    collection_reason: str | None = None
+    promises: list[PromiseOut] = []
+    call_outcomes: list[CallOutcomeOut] = []
 
 
 class ReplyIn(BaseModel):
@@ -255,4 +281,36 @@ class RunOut(BaseModel):
     reminders_sent: int
     blocked_cap: int
     cancelled_paid: int
+    promise_followups: int
+    promises_broken: int
     slots: list[datetime]
+
+
+class CallCardOut(BaseModel):
+    """One customer on the call list (or waiting on a promise, or disputed)."""
+
+    customer_id: int
+    name: str | None
+    phone: str
+    balance_paise: int
+    oldest_due_at: datetime
+    oldest_age_days: int
+    reason: str
+    last_reminder_at: datetime | None
+    latest_promise: PromiseOut | None
+
+
+class CallListOut(BaseModel):
+    to_call: list[CallCardOut]
+    promised: list[CallCardOut]
+    disputed: list[CallCardOut]
+
+
+class OutcomeIn(BaseModel):
+    outcome: str  # promised_date | disputed | written_off
+    promised_date: date | None = None
+    note: str | None = Field(default=None, max_length=300)
+
+
+class ResolveIn(BaseModel):
+    note: str | None = Field(default=None, max_length=300)

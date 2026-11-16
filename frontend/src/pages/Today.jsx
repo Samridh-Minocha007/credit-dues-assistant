@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, rupees, shortWhen } from "../api/client.js";
-import { IconCheck } from "../icons.jsx";
+import { IconCall, IconCheck } from "../icons.jsx";
 
 // The screen the shopkeeper lives on: add credit fast, and see anything
 // that needs them. Nothing else.
@@ -8,9 +8,11 @@ export default function Today({ shop, onChange, go }) {
   const [summary, setSummary] = useState(null);
   const [toCheck, setToCheck] = useState([]);
   const [owing, setOwing] = useState([]);
+  const [callList, setCallList] = useState(null);
 
   const load = async () => {
-    const [customers, review] = await Promise.all([api.searchCustomers(""), api.getIncoming("needs_review")]);
+    const [customers, review, calls] = await Promise.all([api.searchCustomers(""), api.getIncoming("needs_review"), api.getCallList()]);
+    setCallList(calls);
     const withDues = customers.filter((c) => c.balance_paise > 0);
     setOwing(withDues);
     setSummary({ total: withDues.reduce((s, c) => s + c.balance_paise, 0), count: withDues.length });
@@ -62,6 +64,8 @@ export default function Today({ shop, onChange, go }) {
           </div>
         </div>
       )}
+
+      {callList && callList.to_call.length > 0 && <CallStrip people={callList.to_call} go={go} />}
 
       <AddCredit onSaved={changed} />
 
@@ -332,5 +336,34 @@ function CheckPayment({ p, owing, onDone }) {
       )}
       {error && <div className="notice error">{error}</div>}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Customers to call, in their own colour at the top of Today so they don't get
+// lost. Tapping a number opens the phone's dialler; outcomes are recorded on
+// the Calls screen.
+function CallStrip({ people, go }) {
+  return (
+    <section className="call-strip" aria-labelledby="strip-h">
+      <div className="call-strip-head">
+        <IconCall size={20} />
+        <h2 id="strip-h">
+          Call {people.length} {people.length === 1 ? "customer" : "customers"}
+        </h2>
+        <button className="btn-text" onClick={() => go("calls")}>
+          Open call list
+        </button>
+      </div>
+      <div className="call-chips">
+        {people.map((c) => (
+          <a key={c.customer_id} className="call-chip" href={`tel:+91${c.phone}`}>
+            <span className="who">{c.name || "Customer"}</span>
+            <span className="num">{c.phone.replace(/^(\d{5})(\d{5})$/, "$1 $2")}</span>
+            <span className="owes">{rupees(c.balance_paise)}</span>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }

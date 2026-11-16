@@ -4,12 +4,13 @@ Money is stored as whole paise (integers): Rs 120.50 is stored as 12050.
 Decimal fractions stored as floating point drift (0.1 + 0.2 != 0.3), which is
 unacceptable for money. Integers never drift.
 
-Slice 1 added shops, customers, dues and line_items; slice 2 adds payments,
-messages, incoming UPI payments and learned customer UPI IDs. Promises and call outcomes come in later slices.
+Slice 1 added shops, customers, dues and line_items; slice 2 added payments,
+messages, incoming UPI payments and learned customer UPI IDs; slice 4 adds
+promises and call outcomes. Promises and call outcomes come in later slices.
 """
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -89,10 +90,16 @@ class Customer(Base):
     # their name, amounts and dates (owner's rule, see docs/decisions.md) and
     # erase the phone number, items, messages and UPI IDs.
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # "normal" or "disputed" (after a call where the customer disputed the
+    # amount: no messages, off the call list, until resolved or written off).
+    # Promises are tracked in their own table, not here.
+    collection_status: Mapped[str] = mapped_column(String(20), default="normal")
 
     dues: Mapped[list["Due"]] = relationship(back_populates="customer", order_by="Due.created_at")
     payments: Mapped[list["Payment"]] = relationship(back_populates="customer", order_by="Payment.paid_at")
     messages: Mapped[list["Message"]] = relationship(back_populates="customer", order_by="Message.created_at")
+    promises: Mapped[list["Promise"]] = relationship(back_populates="customer", order_by="Promise.created_at")
+    call_outcomes: Mapped[list["CallOutcome"]] = relationship(back_populates="customer", order_by="CallOutcome.created_at")
 
 
 class Due(Base):
@@ -218,3 +225,45 @@ class CustomerUpiId(Base):
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), index=True)
     vpa: Mapped[str] = mapped_column(String(100))
     learned_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Promise(Base):
+    """"I'll pay by Friday." Made on a call (slice 4) or read from a reply
+    like "kal dunga" (slice 5, when the experiment is on).
+
+    While a promise is pending and its date hasn't passed, automatic
+    reminders pause. On the promised day the customer gets one polite
+    follow-up; if they still haven't paid by the next day, it's "broken".
+    """
+
+    __tablename__ = "promises"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), index=True)
+    promised_date: Mapped[date] = mapped_column(Date)
+    source: Mapped[str] = mapped_column(String(10))  # call | reply
+    raw_text: Mapped[str | None] = mapped_column(String(300), nullable=True)  # the reply, for slice 5
+    # pending | kept (paid in full) | broken (date passed, still owing) | replaced (a newer promise or outcome)
+    status: Mapped[str] = mapped_column(String(10), default="pending")
+    followup_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+    customer: Mapped[Customer] = relationship(back_populates="promises")
+
+
+class CallOutcome(Base):
+    """What happened when the shopkeeper called. Kept as history (never
+    overwritten) so we can study what follows each outcome."""
+
+    __tablename__ = "call_outcomes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), index=True)
+    # promised_date | disputed | written_off | dispute_resolved
+    outcome: Mapped[str] = mapped_column(String(20))
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    balance_paise: Mapped[int] = mapped_column(Integer)  # what they owed at the time
+    promise_id: Mapped[int | None] = mapped_column(ForeignKey("promises.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+    customer: Mapped[Customer] = relationship(back_populates="call_outcomes")

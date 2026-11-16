@@ -88,7 +88,8 @@ def test_bill_added_after_the_slot_waits_for_next_week(shop):
 
 def test_monthly_limit(shop):
     cid = entry(shop)
-    shop.put("/api/settings", json={"max_reminders_per_month": 2})
+    # Push the call rule out of the way, so this test only checks the monthly limit.
+    shop.put("/api/settings", json={"max_reminders_per_month": 2, "escalation_days": 90})
     start_timer_and_approve(shop)
     r = shop.post("/api/dev/advance", json={"days": 35}).json()  # 5 Sundays
     assert r["reminders_sent"] == 2 and r["blocked_cap"] == 3
@@ -190,3 +191,14 @@ def test_clock_endpoints(shop):
     assert shop.get("/api/dev/clock").json()["now"] == "2026-11-17T11:00:00"
     r = shop.post("/api/dev/reset-clock").json()
     assert r["offset_seconds"] == 0
+
+
+def test_resetting_the_demo_clock_never_duplicates_a_reminder(shop):
+    cid = entry(shop)
+    start_timer_and_approve(shop)
+    shop.post("/api/dev/advance", json={"days": 7})
+    shop.post("/api/dev/reset-clock")
+    clock.set_now(MONDAY)  # back before that Sunday, as after "Back to real time"
+    shop.post("/api/dev/run-scheduler")
+    shop.post("/api/dev/advance", json={"days": 7})
+    assert len(kinds(shop, cid)) == 1

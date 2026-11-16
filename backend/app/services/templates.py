@@ -57,3 +57,10 @@ def opt_out_confirm(*, shop: str) -> str:
 
 def opt_in_confirm(*, shop: str) -> str:
     return f"Payment messages from {shop} are back on. Reply STOP any time to stop them."
+
+
+def promise_followup(*, name: str | None, shop: str, amount: str, link: str) -> str:
+    return (
+        f"Namaste {name or 'ji'}, a gentle reminder from {shop} about the payment you planned for today. "
+        f"Pending: Rs {amount}. Pay here: {link} {OPT_OUT_LINE}"
+    )

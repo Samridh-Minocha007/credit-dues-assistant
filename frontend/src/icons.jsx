@@ -25,3 +25,6 @@ export const IconRefresh = () => (
 export const IconPhone = () => (
   <svg {...base} width={18} height={18}><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></svg>
 );
+export const IconCall = ({ size = 22 }) => (
+  <svg {...base} width={size} height={size}><path d="M5 4h3.5l1.7 4.3-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" /></svg>
+);

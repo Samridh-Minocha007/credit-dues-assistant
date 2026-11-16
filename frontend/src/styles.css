@@ -19,6 +19,8 @@
   --haldi: #e3a400;
   --haldi-soft: #fff5d6;
   --danger-soft: #fbe9e7;
+  --call: #2f4fb5;       /* "call this customer": its own colour, never mixed with payments */
+  --call-soft: #eaeefb;
 
   --r-sm: 8px;
   --r-md: 12px;
@@ -362,3 +364,43 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 .group-body { border-top: none; margin: 0 0 6px 52px; }
 .group-body li:last-child { border-bottom: none; }
 @media (max-width: 520px) { .group-body { margin-left: 0; } .group-body li { grid-template-columns: 62px 1fr auto; } }
+
+/* ---------- call list ---------- */
+.call-card .outcomes, .call-card .outcome-form { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid #f0d98a; }
+.date-input { width: auto; padding: 6px 10px; font-size: var(--t-sm); border-radius: 999px; }
+.state-line { margin-top: 10px; font-size: var(--t-sm); padding: 10px 14px; border-radius: var(--r-sm); }
+.state-line.to_call { background: var(--haldi-soft); border-left: 4px solid var(--haldi); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.state-line.promised { background: var(--paper); border: 1px solid var(--line); }
+.state-line.disputed { background: var(--danger-soft); }
+
+/* ---------- calls: own colour ---------- */
+.tab .dot.call { background: var(--call); color: white; }
+.call-strip {
+  background: var(--call-soft); border: 1px solid #cdd6f4; border-radius: var(--r-lg);
+  padding: 14px 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px;
+}
+.call-strip-head { display: flex; align-items: center; gap: 10px; color: var(--call); }
+.call-strip-head h2 { font-size: var(--t-md); font-weight: 700; flex: 1; color: var(--ink); }
+.call-strip-head .btn-text { color: var(--call); text-decoration-color: #b8c4ee; }
+.call-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.call-chip {
+  display: inline-flex; align-items: baseline; gap: 8px; text-decoration: none; color: white;
+  background: var(--call); border-radius: 999px; padding: 9px 16px; min-height: 44px; align-items: center;
+}
+.call-chip:hover { background: #253f94; }
+.call-chip .who { font-weight: 700; }
+.call-chip .num { font-variant-numeric: tabular-nums; opacity: 0.92; }
+.call-chip .owes { font-size: var(--t-xs); background: rgba(255,255,255,0.18); border-radius: 999px; padding: 1px 8px; }
+
+.call-card {
+  border-left: 4px solid var(--call); background: var(--call-soft);
+  border-radius: 0 var(--r-md) var(--r-md) 0; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.call-card + .call-card { margin-top: 12px; }
+.call-card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.call-card .actions { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.call-card .btn { min-height: 44px; }
+.call-card .call-btn { background: var(--call); border-color: var(--call); color: white; text-decoration: none; }
+.call-card .call-btn:hover { background: #253f94; border-color: #253f94; }
+.call-card .outcomes, .call-card .outcome-form { border-top-color: #cdd6f4; }

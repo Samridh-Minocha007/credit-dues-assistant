@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, setClockOffset } from "./api/client.js";
-import { IconActivity, IconCustomers, IconSettings, IconToday } from "./icons.jsx";
+import { IconActivity, IconCall, IconCustomers, IconSettings, IconToday } from "./icons.jsx";
 import Today from "./pages/Today.jsx";
 import Customers from "./pages/Customers.jsx";
 import Activity from "./pages/Activity.jsx";
 import Settings from "./pages/Settings.jsx";
+import CallsPage from "./pages/Calls.jsx";
 import CustomerPhone from "./pages/CustomerPhone.jsx";
 
-// Three places for daily work, plus settings (used once, so it sits apart).
+// Four places for daily work, plus settings (used once, so it sits apart).
 const PLACES = [
   { key: "today", label: "Today", Icon: IconToday },
+  { key: "calls", label: "Calls", Icon: IconCall },
   { key: "customers", label: "Customers", Icon: IconCustomers },
   { key: "activity", label: "Activity", Icon: IconActivity },
 ];
@@ -25,25 +27,43 @@ export default function App() {
 
 function ShopApp() {
   const [view, setView] = useState("today");
+  // Tapping the tab you're already on starts that screen fresh (e.g. back to
+  // the customer list from a customer's page), like most phone apps.
+  const [visit, setVisit] = useState(0);
+  const go = (key) => {
+    if (key === view) setVisit((n) => n + 1);
+    setView(key);
+  };
   const [shop, setShop] = useState(null);
-  const [toCheck, setToCheck] = useState(0);
+  const [toCheck, setToCheck] = useState(0); // UPI payments waiting for the shopkeeper
+  const [toCall, setToCall] = useState(0); // customers on the call list
 
   // Shop settings and the "payments to check" count are shown in the shell,
   // so refresh them whenever the screen changes or something is saved.
   const refresh = useCallback(() => {
     api.getClock().then((c) => setClockOffset(c.offset_seconds)).catch(() => {});
     api.getSettings().then(setShop).catch(() => {});
-    api.getIncoming("needs_review").then((r) => setToCheck(r.length)).catch(() => {});
+    Promise.all([api.getIncoming("needs_review"), api.getCallList()])
+      .then(([review, calls]) => {
+        setToCheck(review.length);
+        setToCall(calls.to_call.length);
+      })
+      .catch(() => {});
   }, []);
   useEffect(refresh, [view, refresh]);
 
   const tabs = PLACES.map(({ key, label, Icon }) => (
-    <button key={key} className="tab" aria-current={view === key ? "page" : undefined} onClick={() => setView(key)}>
+    <button key={key} className="tab" aria-current={view === key ? "page" : undefined} onClick={() => go(key)}>
       <Icon />
       {label}
       {key === "today" && toCheck > 0 && (
-        <span className="dot" aria-label={`${toCheck} to check`}>
+        <span className="dot" aria-label={`${toCheck} payments to check`}>
           {toCheck}
+        </span>
+      )}
+      {key === "calls" && toCall > 0 && (
+        <span className="dot call" aria-label={`${toCall} customers to call`}>
+          {toCall}
         </span>
       )}
     </button>
@@ -83,8 +103,9 @@ function ShopApp() {
           </button>
         </header>
 
-        <main className="content">
-          {view === "today" && <Today shop={shop} onChange={refresh} go={setView} />}
+        <main className="content" key={`${view}-${visit}`}>
+          {view === "today" && <Today shop={shop} onChange={refresh} go={go} />}
+          {view === "calls" && <CallsPage onChange={refresh} />}
           {view === "customers" && <Customers />}
           {view === "activity" && <Activity />}
           {view === "settings" && <Settings onSaved={refresh} />}

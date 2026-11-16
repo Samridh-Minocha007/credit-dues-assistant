@@ -20,6 +20,7 @@ ADDED_COLUMNS = [
     ("shops", "scheduler_last_run_at", "DATETIME"),  # slice 3
     ("shops", "demo_clock_offset_s", "INTEGER NOT NULL DEFAULT 0"),  # slice 3
     ("customers", "deleted_at", "DATETIME"),  # slice 3
+    ("customers", "collection_status", "VARCHAR(20) NOT NULL DEFAULT 'normal'"),  # slice 4
 ]
 
 

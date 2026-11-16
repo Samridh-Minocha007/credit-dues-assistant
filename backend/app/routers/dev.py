@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/dev", tags=["demo clock"])
 
 
 def _run_out(summary) -> RunOut:
-    return RunOut(now=clock.now(), **{k: getattr(summary, k) for k in ("delivered", "reminders_sent", "blocked_cap", "cancelled_paid", "slots")})
+    return RunOut(now=clock.now(), **{k: getattr(summary, k) for k in ("delivered", "reminders_sent", "blocked_cap", "cancelled_paid", "promise_followups", "promises_broken", "slots")})
 
 
 @router.get("/clock", response_model=ClockOut)

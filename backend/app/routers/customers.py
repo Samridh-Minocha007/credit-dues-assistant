@@ -3,7 +3,18 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Customer
-from ..schemas import CustomerDetail, CustomerSummary, DueOut, MessageOut, PaymentIn, PaymentOut, PaymentResultOut
+from ..schemas import (
+    CallOutcomeOut,
+    CustomerDetail,
+    CustomerSummary,
+    DueOut,
+    MessageOut,
+    PaymentIn,
+    PaymentOut,
+    PaymentResultOut,
+    PromiseOut,
+)
+from ..services.collections import collection_info
 from ..services.customers import CustomerRow, list_customers
 from ..services.messaging import pay_link
 from ..services.money import to_paise
@@ -45,6 +56,7 @@ def _get(db: Session, customer_id: int) -> Customer:
 def get_customer(customer_id: int, db: Session = Depends(get_db)):
     c = _get(db, customer_id)
     open_dues = [d for d in c.dues if d.status == "open"]
+    info = collection_info(get_or_create_shop(db), c)
     return CustomerDetail(
         id=c.id,
         phone=c.phone,
@@ -63,6 +75,10 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
         dues=[DueOut.model_validate(d) for d in reversed(c.dues)],
         payments=[PaymentOut.model_validate(p) for p in reversed(c.payments)],
         messages=[MessageOut.model_validate(m) for m in reversed(c.messages)],
+        collection_state=info.state if info else None,
+        collection_reason=info.reason if info else None,
+        promises=[PromiseOut.model_validate(p) for p in reversed(c.promises)],
+        call_outcomes=[CallOutcomeOut.model_validate(o) for o in reversed(c.call_outcomes)],
     )
 
 

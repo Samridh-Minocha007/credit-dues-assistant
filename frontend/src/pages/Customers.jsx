@@ -103,6 +103,9 @@ function CustomerDetail({ id, onBack }) {
     ...c.dues.map((d) => ({ at: d.created_at, kind: "bill", d })),
     ...c.payments.map((p) => ({ at: p.paid_at, kind: "payment", p })),
     ...c.messages.map((m) => ({ at: m.created_at, kind: "message", m })),
+    ...c.call_outcomes.map((o) => ({ at: o.created_at, kind: "call", o, promise: c.promises.find((p) => p.id === o.promise_id) })),
+    // Promises from replies (slice 5) have no call; show them on their own.
+    ...c.promises.filter((p) => p.source !== "call").map((p) => ({ at: p.created_at, kind: "promise", p })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1));
 
   return (
@@ -117,6 +120,9 @@ function CustomerDetail({ id, onBack }) {
           Customer since {new Date(c.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.
           {c.opted_out && !c.deleted && " Messages stopped."}
         </p>
+        {c.collection_state && c.collection_state !== "reminders" && (
+          <p className={`state-line ${c.collection_state}`}>{STATE_LINE[c.collection_state](c)}</p>
+        )}
       </div>
 
       <div className="balance-block">
@@ -163,7 +169,55 @@ function CustomerDetail({ id, onBack }) {
   );
 }
 
+const STATE_LINE = {
+  to_call: (c) => `On your call list: ${c.collection_reason.toLowerCase()}. Automatic reminders have stopped.`,
+  promised: (c) => `${c.collection_reason}. Reminders are paused until then.`,
+  disputed: () => "Disputed the amount. No messages go out until you sort it out on the Today screen.",
+};
+
+const OUTCOME_TEXT = {
+  promised_date: "Called: promised to pay",
+  disputed: "Called: disputed the amount",
+  written_off: "Written off",
+  dispute_resolved: "Dispute sorted out",
+};
+
+const PROMISE_STATUS = { pending: "waiting", kept: "kept", broken: "not kept", replaced: "replaced by a newer promise" };
+
+function promiseDate(iso) {
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+}
+
 function HistoryRow({ h }) {
+  if (h.kind === "call") {
+    const { o, promise } = h;
+    return (
+      <li>
+        <span className="when">{shortWhen(h.at)}</span>
+        <div>
+          <div className="what">
+            <strong>{OUTCOME_TEXT[o.outcome] || o.outcome}</strong>
+            {promise && ` by ${promiseDate(promise.promised_date)}`}
+            {promise && <span className="tag">{PROMISE_STATUS[promise.status]}</span>}
+          </div>
+          {o.note && <div className="msg">“{o.note}”</div>}
+        </div>
+        {o.outcome === "written_off" ? <span className="money muted">{rupees(o.balance_paise)}</span> : <span />}
+      </li>
+    );
+  }
+  if (h.kind === "promise") {
+    return (
+      <li>
+        <span className="when">{shortWhen(h.at)}</span>
+        <div className="what">
+          Promised in a reply to pay by {promiseDate(h.p.promised_date)}
+          <span className="tag">{PROMISE_STATUS[h.p.status]}</span>
+        </div>
+        <span />
+      </li>
+    );
+  }
   if (h.kind === "bill") {
     const d = h.d;
     return (
@@ -174,6 +228,7 @@ function HistoryRow({ h }) {
             Bill of {rupees(d.bill_paise)}
             {d.paid_at_entry_paise > 0 && `, paid ${rupees(d.paid_at_entry_paise)} then`}
             {d.status === "paid" && <span className="tag">cleared</span>}
+            {d.status === "written_off" && <span className="tag">written off</span>}
           </div>
           {d.items.length > 0 && (
             <div className="msg">{d.items.map((i) => [i.description, i.qty].filter(Boolean).join(" ")).join(", ")}</div>

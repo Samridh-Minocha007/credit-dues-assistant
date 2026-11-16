@@ -54,6 +54,10 @@ def record_payment(db: Session, shop: Shop, customer: Customer, amount_paise: in
             due.closed_at = now  # this timestamp drives the "recovered within 30 days" metric
 
     remaining = balance - amount_paise
+    if remaining == 0:
+        for p in customer.promises:
+            if p.status == "pending":
+                p.status = "kept"
     receipt = queue_message(
         db,
         shop,
