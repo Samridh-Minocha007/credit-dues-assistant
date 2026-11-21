@@ -445,3 +445,10 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 
 /* ---------- credit limit warning ---------- */
 .limit-warn { font-size: var(--t-sm); padding: 8px 12px; border-radius: var(--r-sm); background: var(--danger-soft); color: #8a1f17; }
+
+/* ---------- voice entry ---------- */
+.voice { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px dashed var(--line); }
+.voice-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.voice-row .input { flex: 1 1 200px; }
+.voice-btn { border-radius: 999px; }
+.voice-btn.on { background: var(--due); border-color: var(--due); color: white; }

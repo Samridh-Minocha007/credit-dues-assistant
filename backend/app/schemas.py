@@ -337,3 +337,17 @@ class CustomerUpdate(BaseModel):
 
     name: str | None = Field(default=None, max_length=100)
     credit_limit: Rupees | None = Field(default=None, ge=0)
+
+
+class VoiceIn(BaseModel):
+    text: str = Field(min_length=1, max_length=300)
+
+
+class VoiceOut(BaseModel):
+    heard: str
+    bill: float | None
+    paid: float | None
+    phone: str | None
+    name: str | None
+    customer_id: int | None
+    candidates: list[dict]

@@ -39,6 +39,7 @@ export const api = {
   updateSettings: (changes) => request("PUT", "/api/settings", changes),
   approveSettings: () => request("POST", "/api/settings/approve"),
   createEntry: (entry) => request("POST", "/api/entries", entry),
+  parseVoice: (text) => request("POST", "/api/entries/parse-voice", { text }),
   searchCustomers: (q) => request("GET", `/api/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`),
   getCustomer: (id) => request("GET", `/api/customers/${id}`),
   recordCashPayment: (id, amount) => request("POST", `/api/customers/${id}/payments`, { amount }),

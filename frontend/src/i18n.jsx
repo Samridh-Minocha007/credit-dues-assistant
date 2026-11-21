@@ -86,6 +86,15 @@ const HI = {
   "Suggest a part payment in reminders": "याद-संदेश में थोड़ा भुगतान सुझाएँ",
   "Extra reminder on the 1st of the month": "महीने की 1 तारीख को एक और याद-संदेश",
 
+  "Say it instead": "बोलकर लिखें",
+  "Listening…": "सुन रहे हैं…",
+  "or type it": "या टाइप करें",
+  "e.g. Ramesh 500, 200 diye": "जैसे: Ramesh 500, 200 diye",
+  "Fill form": "फ़ॉर्म भरें",
+  "Heard “{text}”. Check the form, then save.": "सुना: “{text}”। फ़ॉर्म जाँचें, फिर सेव करें।",
+  "Which one?": "कौन से?",
+  "Couldn’t hear that. Try again, or type it.": "सुनाई नहीं दिया। फिर कोशिश करें, या टाइप करें।",
+
   // Calls
   "Customers whose dues are old enough that a call works better than another message.":
     "जिनका उधार इतना पुराना है कि अब मैसेज से बेहतर कॉल करना है।",

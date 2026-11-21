@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..schemas import CustomerSummary, DueOut, EntryIn, EntryOut, MessageOut
+from ..schemas import CustomerSummary, DueOut, EntryIn, EntryOut, MessageOut, VoiceIn, VoiceOut
 from ..services.customers import effective_limit, list_customers
 from ..services.entries import EntryError, ItemInput, record_entry
 from ..services.phone import InvalidPhone
@@ -47,3 +47,16 @@ def create_entry(body: EntryIn, db: Session = Depends(get_db)):
         is_new_customer=result.is_new_customer,
         message=MessageOut.model_validate(result.message),
     )
+
+
+@router.post("/parse-voice", response_model=VoiceOut)
+def parse_voice_entry(body: VoiceIn, db: Session = Depends(get_db)):
+    """Fill the entry form from what the shopkeeper said. Never saves anything."""
+    from sqlalchemy import select
+
+    from ..models import Customer
+    from ..services.voice import parse_voice
+
+    shop = get_or_create_shop(db)
+    customers = db.scalars(select(Customer).where(Customer.shop_id == shop.id, Customer.deleted_at.is_(None))).all()
+    return parse_voice(body.text, customers).__dict__

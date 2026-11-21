@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, rupees, shortWhen } from "../api/client.js";
 import { IconCall, IconCheck } from "../icons.jsx";
 import { t, tx } from "../i18n.jsx";
+import VoiceEntry from "./VoiceEntry.jsx";
 
 // The screen the shopkeeper lives on: add credit fast, and see anything
 // that needs them. Nothing else.
@@ -154,8 +155,18 @@ function AddCredit({ onSaved }) {
 
   const setItem = (i, key) => (e) => setItems(items.map((x, j) => (j === i ? { ...x, [key]: e.target.value } : x)));
 
+  // Fill the form from voice entry (never saves by itself).
+  function fillFromVoice(r) {
+    if (r.phone) setPhone(r.phone);
+    if (!r.customer_id && r.name) setName(r.name);
+    if (r.bill != null) setBill(String(r.bill));
+    setPaid(r.paid != null ? String(r.paid) : "");
+    if (!r.phone) phoneRef.current?.focus();
+  }
+
   return (
     <form className="entry" onSubmit={save} aria-label="Add credit">
+      <VoiceEntry onFill={fillFromVoice} />
       <label className="field">
         {t("Customer’s phone number")}
         <input
