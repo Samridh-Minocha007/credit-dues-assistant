@@ -28,3 +28,6 @@ export const IconPhone = () => (
 export const IconCall = ({ size = 22 }) => (
   <svg {...base} width={size} height={size}><path d="M5 4h3.5l1.7 4.3-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" /></svg>
 );
+export const IconResults = () => (
+  <svg {...base}><path d="M5 20V10M12 20V4M19 20v-7" /></svg>
+);

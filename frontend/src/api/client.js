@@ -1,11 +1,29 @@
 // Tiny wrapper around fetch. Turns FastAPI error responses into readable text.
+//
+// It also tells the app whether the backend is reachable. If the backend
+// isn't running, the dev server answers with an error and no JSON; without
+// this, every screen would just sit on "Loading…" with no explanation.
+export const SERVER_EVENT = "server-status";
+const announce = (up) => window.dispatchEvent(new CustomEvent(SERVER_EVENT, { detail: { up } }));
+
 async function request(method, path, body) {
-  const res = await fetch(path, {
-    method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    announce(false);
+    throw new Error("Can't reach the app server.");
+  }
   const data = await res.json().catch(() => null);
+  if (res.status >= 500 && data === null) {
+    announce(false); // the proxy couldn't reach FastAPI
+    throw new Error("Can't reach the app server.");
+  }
+  announce(true);
   if (!res.ok) {
     // FastAPI sends {detail: "text"} for our own errors and
     // {detail: [{msg: ...}, ...]} for automatic validation errors.
@@ -28,6 +46,7 @@ export const api = {
   optIn: (id) => request("POST", `/api/customers/${id}/opt-in`),
   deleteCustomer: (id) => request("DELETE", `/api/customers/${id}`),
   getCallList: () => request("GET", "/api/call-list"),
+  getMetrics: () => request("GET", "/api/metrics"),
   callOutcome: (id, body) => request("POST", `/api/customers/${id}/call-outcome`, body),
   resolveDispute: (id, note) => request("POST", `/api/customers/${id}/resolve-dispute`, { note: note || null }),
   getMessages: (customerId) => request("GET", `/api/messages${customerId ? `?customer_id=${customerId}` : ""}`),

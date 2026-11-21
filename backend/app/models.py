@@ -117,6 +117,10 @@ class Due(Base):
     # When the balance hit zero (or was written off). Primary metric:
     # recovered within 30 days  <=>  closed_at - created_at <= 30 days.
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Which arm of the experiment this bill belongs to, fixed when it's
+    # created: "replies_on" (reply reading was switched on) or "baseline".
+    # None = created before we started tracking (slice 6).
+    variant: Mapped[str | None] = mapped_column(String(12), nullable=True)
 
     customer: Mapped[Customer] = relationship(back_populates="dues")
     items: Mapped[list["LineItem"]] = relationship(back_populates="due", cascade="all, delete-orphan")

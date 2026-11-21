@@ -10,7 +10,7 @@ from fastapi import FastAPI
 
 from .db import Base, SessionLocal, engine
 from . import clock
-from .routers import calls, customers, dev, entries, incoming, messages, pay, settings, sim
+from .routers import calls, customers, dev, entries, incoming, messages, metrics, pay, settings, sim
 from .services.scheduler import run_scheduler
 from .services.shop import get_or_create_shop
 from .upgrade import upgrade
@@ -51,6 +51,7 @@ app.include_router(settings.router)
 app.include_router(entries.router)
 app.include_router(customers.router)
 app.include_router(calls.router)
+app.include_router(metrics.router)
 app.include_router(messages.router)
 app.include_router(pay.router)
 app.include_router(incoming.router)

@@ -83,6 +83,7 @@ def record_entry(
         balance_paise=bill - paid,
         status="open",
         created_at=now,
+        variant="replies_on" if shop.reply_parsing_enabled else "baseline",
     )
     for it in items or []:
         if it.description.strip():

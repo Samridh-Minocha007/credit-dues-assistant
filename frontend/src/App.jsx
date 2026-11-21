@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, setClockOffset } from "./api/client.js";
-import { IconActivity, IconCall, IconCustomers, IconSettings, IconToday } from "./icons.jsx";
+import { SERVER_EVENT, api, setClockOffset } from "./api/client.js";
+import { IconActivity, IconCall, IconCustomers, IconResults, IconSettings, IconToday } from "./icons.jsx";
 import Today from "./pages/Today.jsx";
 import Customers from "./pages/Customers.jsx";
 import Activity from "./pages/Activity.jsx";
 import Settings from "./pages/Settings.jsx";
 import CallsPage from "./pages/Calls.jsx";
+import Results from "./pages/Results.jsx";
 import CustomerPhone from "./pages/CustomerPhone.jsx";
 
 // Four places for daily work, plus settings (used once, so it sits apart).
@@ -40,6 +41,14 @@ function ShopApp() {
 
   // Shop settings and the "payments to check" count are shown in the shell,
   // so refresh them whenever the screen changes or something is saved.
+  // False when the backend can't be reached (see api/client.js).
+  const [serverUp, setServerUp] = useState(true);
+  useEffect(() => {
+    const onStatus = (e) => setServerUp(e.detail.up);
+    window.addEventListener(SERVER_EVENT, onStatus);
+    return () => window.removeEventListener(SERVER_EVENT, onStatus);
+  }, []);
+
   const refresh = useCallback(() => {
     api.getClock().then((c) => setClockOffset(c.offset_seconds)).catch(() => {});
     api.getSettings().then(setShop).catch(() => {});
@@ -83,7 +92,12 @@ function ShopApp() {
         <nav className="tabbar" aria-label="Main">
           {tabs}
         </nav>
-        <button className="tab settings-link" aria-current={view === "settings" ? "page" : undefined} onClick={() => setView("settings")}>
+        {/* Results and Settings are for the owner, not daily work, so they sit apart at the bottom. */}
+        <button className="tab settings-link" aria-current={view === "results" ? "page" : undefined} onClick={() => go("results")}>
+          <IconResults />
+          Results
+        </button>
+        <button className="tab" aria-current={view === "settings" ? "page" : undefined} onClick={() => go("settings")}>
           <IconSettings />
           Settings
         </button>
@@ -95,6 +109,15 @@ function ShopApp() {
           {brand}
           <button
             className="icon-btn"
+            aria-label="Results"
+            aria-pressed={view === "results"}
+            onClick={() => setView(view === "results" ? "today" : "results")}
+          >
+            <IconResults />
+          </button>
+          <button
+            className="icon-btn"
+            style={{ marginLeft: 0 }}
             aria-label="Settings"
             aria-pressed={view === "settings"}
             onClick={() => setView(view === "settings" ? "today" : "settings")}
@@ -104,10 +127,21 @@ function ShopApp() {
         </header>
 
         <main className="content" key={`${view}-${visit}`}>
+          {!serverUp && (
+            <div className="server-down" role="alert">
+              <strong>Can’t reach the app server.</strong> The backend isn’t running, so nothing can load. Start it from the{" "}
+              <code>backend</code> folder with <code>.venv/Scripts/python -m uvicorn app.main:app</code>, then{" "}
+              <button className="btn-text" onClick={() => window.location.reload()}>
+                reload this page
+              </button>
+              .
+            </div>
+          )}
           {view === "today" && <Today shop={shop} onChange={refresh} go={go} />}
           {view === "calls" && <CallsPage onChange={refresh} />}
           {view === "customers" && <Customers />}
           {view === "activity" && <Activity />}
+          {view === "results" && <Results />}
           {view === "settings" && <Settings onSaved={refresh} />}
         </main>
 

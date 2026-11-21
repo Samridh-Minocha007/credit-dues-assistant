@@ -24,6 +24,7 @@ ADDED_COLUMNS = [
     ("promises", "parsed_by", "VARCHAR(10)"),  # slice 5
     ("promises", "confidence", "FLOAT"),  # slice 5
     ("messages", "parsed", "VARCHAR(300)"),  # slice 5
+    ("dues", "variant", "VARCHAR(12)"),  # slice 6
 ]
 
 
