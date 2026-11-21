@@ -3,6 +3,20 @@ import { api, setToken } from "../api/client.js";
 import { IconCheck } from "../icons.jsx";
 import { getLang, setLang, t } from "../i18n.jsx";
 
+// The download needs the login token, so fetch it and save it as a file
+// (a plain link can't send the token).
+async function downloadCsv() {
+  const token = localStorage.getItem("token");
+  const res = await fetch("/api/export/ledger.csv", { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const m = (res.headers.get("content-disposition") || "").match(/filename="(.+)"/);
+  a.download = m ? m[1] : "ledger.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 // Set up once. The shopkeeper approves the reminder wording and schedule here;
@@ -257,6 +271,14 @@ export default function Settings({ onSaved }) {
             </span>
           </span>
         </label>
+      </section>
+
+      <section className="settings-group">
+        <h2>{t("Your data")}</h2>
+        <p>{t("Download every bill and payment as a spreadsheet (opens in Excel or Google Sheets).")}</p>
+        <button type="button" className="btn" style={{ alignSelf: "flex-start" }} onClick={downloadCsv}>
+          {t("Download data (CSV)")}
+        </button>
       </section>
 
       {localStorage.getItem("token") && (

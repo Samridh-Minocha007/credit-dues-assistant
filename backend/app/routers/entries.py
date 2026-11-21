@@ -14,6 +14,10 @@ router = APIRouter(prefix="/api/entries", tags=["entries"])
 @router.post("", response_model=EntryOut, status_code=201)
 def create_entry(body: EntryIn, db: Session = Depends(get_db)):
     shop = get_or_create_shop(db)
+    if body.client_ref:
+        existing = _existing_offline_entry(db, shop, body.client_ref)
+        if existing is not None:
+            return existing  # already synced earlier: don't create it twice
     try:
         result = record_entry(
             db,
@@ -23,12 +27,30 @@ def create_entry(body: EntryIn, db: Session = Depends(get_db)):
             amount_paid=body.amount_paid,
             name=body.name,
             items=[ItemInput(i.description, i.qty, i.amount) for i in body.items],
+            client_ref=body.client_ref,
+            recorded_at=body.recorded_at,
         )
     except (InvalidPhone, EntryError) as e:
         raise HTTPException(422, str(e))
 
+    return _entry_out(db, shop, result.customer, result.due, result.is_new_customer, result.message)
+
+
+def _existing_offline_entry(db: Session, shop, client_ref: str):
+    from sqlalchemy import select
+
+    from ..models import Customer, Due
+
+    due = db.scalar(select(Due).join(Customer).where(Customer.shop_id == shop.id, Due.client_ref == client_ref))
+    if due is None:
+        return None
+    notice = next((m for m in reversed(due.customer.messages) if m.kind == "bill_notice"), due.customer.messages[-1])
+    return _entry_out(db, shop, due.customer, due, False, notice)
+
+
+def _entry_out(db: Session, shop, customer, due, is_new: bool, message) -> EntryOut:
     # Return the customer's new total so the screen can show "Ramesh now owes Rs 840".
-    row = next(r for r in list_customers(db, shop, q=result.customer.phone) if r.customer.id == result.customer.id)
+    row = next(r for r in list_customers(db, shop, q=customer.phone) if r.customer.id == customer.id)
     return EntryOut(
         customer=CustomerSummary(
             id=row.customer.id,
@@ -43,9 +65,9 @@ def create_entry(body: EntryIn, db: Session = Depends(get_db)):
             own_credit_limit_paise=row.customer.credit_limit_paise,
         ),
         over_limit=(lambda lim: lim is not None and row.balance_paise > lim)(effective_limit(shop, row.customer)),
-        due=DueOut.model_validate(result.due),
-        is_new_customer=result.is_new_customer,
-        message=MessageOut.model_validate(result.message),
+        due=DueOut.model_validate(due),
+        is_new_customer=is_new,
+        message=MessageOut.model_validate(message),
     )
 
 

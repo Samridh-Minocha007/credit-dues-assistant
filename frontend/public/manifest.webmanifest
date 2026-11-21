@@ -1,0 +1,12 @@
+{
+  "name": "Credit dues assistant (concept prototype)",
+  "short_name": "Dues",
+  "description": "Record credit sales and get paid on time. Concept prototype: messages and payments are simulated.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f4",
+  "theme_color": "#1f2a44",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

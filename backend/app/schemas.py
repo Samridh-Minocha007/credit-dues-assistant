@@ -95,6 +95,9 @@ class EntryIn(BaseModel):
     amount_paid: Rupees = Field(default=Decimal(0), ge=0, max_digits=10, decimal_places=2)
     name: str | None = Field(default=None, max_length=100)
     items: list[ItemIn] = Field(default_factory=list, max_length=50)
+    # Offline entries: a unique id from the phone, and when the sale really happened.
+    client_ref: str | None = Field(default=None, max_length=40)
+    recorded_at: datetime | None = None
 
 
 class ItemOut(BaseModel):

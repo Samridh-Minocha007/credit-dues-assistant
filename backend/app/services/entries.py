@@ -5,6 +5,7 @@ record the unpaid part of the bill as a due. The shop screen therefore needs
 a single tap, which is how we keep entry under 5 seconds.
 """
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -51,6 +52,8 @@ def record_entry(
     amount_paid: Decimal,
     name: str | None = None,
     items: list[ItemInput] | None = None,
+    client_ref: str | None = None,
+    recorded_at=None,
 ) -> EntryResult:
     phone = normalize_phone(phone)
     bill = to_paise(bill_amount)
@@ -64,6 +67,13 @@ def record_entry(
         raise EntryError("Nothing is owed on this bill")
 
     now = clock.now()
+    # A sale saved offline keeps its real time, as long as it's believable:
+    # not in the future and not more than 7 days old.
+    sale_time = now
+    if recorded_at is not None:
+        recorded_at = recorded_at.replace(tzinfo=None, microsecond=0)
+        if now - timedelta(days=7) <= recorded_at <= now:
+            sale_time = recorded_at
     name = (name or "").strip() or None
 
     customer = find_customer(db, shop, phone)
@@ -82,7 +92,8 @@ def record_entry(
         paid_at_entry_paise=paid,
         balance_paise=bill - paid,
         status="open",
-        created_at=now,
+        created_at=sale_time,
+        client_ref=client_ref,
         variant="replies_on" if shop.reply_parsing_enabled else "baseline",
     )
     for it in items or []:

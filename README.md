@@ -47,3 +47,8 @@ cd backend
 
 See [docs/demo-script.md](docs/demo-script.md) for a 2-minute walk-through. The data comes from replaying
 the app's real rules with simulated customer behaviour, so describe any numbers from it as simulated.
+
+## Pilot with real shops
+
+See [docs/pilot.md](docs/pilot.md): login per shop, hosting on one server with Postgres, offline entry,
+data export, and what to measure.

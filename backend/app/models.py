@@ -135,6 +135,9 @@ class Due(Base):
     # created: "replies_on" (reply reading was switched on) or "baseline".
     # None = created before we started tracking (slice 6).
     variant: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    # Set by the phone for entries saved while offline, so a retried sync can
+    # never create the same bill twice.
+    client_ref: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
 
     customer: Mapped[Customer] = relationship(back_populates="dues")
     items: Mapped[list["LineItem"]] = relationship(back_populates="due", cascade="all, delete-orphan")

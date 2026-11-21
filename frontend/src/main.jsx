@@ -10,6 +10,7 @@ import "@fontsource/mukta/devanagari-600.css";
 import "@fontsource/mukta/devanagari-700.css";
 import App from "./App.jsx";
 import { getLang } from "./i18n.jsx";
+import { startAutoSync } from "./offline.js";
 import "./styles.css";
 
 // Re-mount the app when the language changes, so every t("...") re-runs.
@@ -22,6 +23,13 @@ function Root() {
   }, []);
   return <App key={lang} />;
 }
+
+// Installable app: register the service worker in the built app only (in
+// development it would cache files you're still editing).
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+startAutoSync();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

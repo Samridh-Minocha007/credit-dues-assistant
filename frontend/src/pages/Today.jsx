@@ -3,6 +3,7 @@ import { api, rupees, shortWhen } from "../api/client.js";
 import { IconCall, IconCheck } from "../icons.jsx";
 import { t, tx } from "../i18n.jsx";
 import VoiceEntry from "./VoiceEntry.jsx";
+import { flushQueue, queueEntry, queued, removeQueued } from "../offline.js";
 
 // The screen the shopkeeper lives on: add credit fast, and see anything
 // that needs them. Nothing else.
@@ -67,6 +68,8 @@ export default function Today({ shop, onChange, go }) {
         </div>
       )}
 
+      <PendingSync onSynced={changed} />
+
       {callList && callList.to_call.length > 0 && <CallStrip people={callList.to_call} go={go} />}
 
       <AddCredit onSaved={changed} />
@@ -127,16 +130,25 @@ function AddCredit({ onSaved }) {
     if (!canSave) return;
     setError("");
     setSaving(true);
+    const entry = {
+      phone,
+      bill_amount: bill,
+      amount_paid: paid || "0",
+      name: name || null,
+      items: showItems
+        ? items.filter((i) => i.description.trim()).map((i) => ({ description: i.description, qty: i.qty || null, amount: i.amount || null }))
+        : [],
+    };
     try {
-      const res = await api.createEntry({
-        phone,
-        bill_amount: bill,
-        amount_paid: paid || "0",
-        name: name || null,
-        items: showItems
-          ? items.filter((i) => i.description.trim()).map((i) => ({ description: i.description, qty: i.qty || null, amount: i.amount || null }))
-          : [],
-      });
+      let res;
+      try {
+        res = await api.createEntry(entry);
+      } catch (err) {
+        if (err.message !== "Can't reach the app server.") throw err;
+        // No internet: keep it on the phone; it's sent automatically later.
+        queueEntry(entry);
+        res = { offline: true };
+      }
       setSaved(res);
       setPhone("");
       setBill("");
@@ -272,7 +284,13 @@ function AddCredit({ onSaved }) {
         </button>
       )}
 
-      {saved && (
+      {saved && saved.offline && (
+        <div className="notice ok saved-line" role="status">
+          <IconCheck size={18} />
+          <div>{t("No internet. Saved on this phone; it will be sent automatically when you’re back online.")}</div>
+        </div>
+      )}
+      {saved && !saved.offline && (
         <div className="notice ok saved-line" role="status">
           <IconCheck size={18} />
           <div>
@@ -392,5 +410,40 @@ function CallStrip({ people, go }) {
         ))}
       </div>
     </section>
+  );
+}
+
+// Entries saved on the phone without internet, waiting to be sent.
+function PendingSync({ onSynced }) {
+  const [list, setList] = useState(queued());
+  useEffect(() => {
+    const update = () => setList(queued());
+    window.addEventListener("offline-queue", update);
+    return () => window.removeEventListener("offline-queue", update);
+  }, []);
+  if (list.length === 0) return null;
+  const waiting = list.filter((x) => !x.error);
+  const failed = list.filter((x) => x.error);
+  return (
+    <div className="pending-sync">
+      {waiting.length > 0 && (
+        <div className="row-between">
+          <span>{t("{n} entries saved on this phone, waiting for internet", { n: waiting.length })}</span>
+          <button className="btn" onClick={async () => (await flushQueue()) && onSynced()}>
+            {t("Send now")}
+          </button>
+        </div>
+      )}
+      {failed.map((x) => (
+        <div key={x.client_ref} className="row-between">
+          <span className="small">
+            {t("Couldn’t save {phone}, ₹{bill}: {reason}", { phone: x.phone, bill: x.bill_amount, reason: x.error })}
+          </span>
+          <button className="btn-text" onClick={() => removeQueued(x.client_ref)}>
+            {t("Remove")}
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }

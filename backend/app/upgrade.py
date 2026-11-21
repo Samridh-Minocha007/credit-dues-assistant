@@ -35,6 +35,7 @@ ADDED_COLUMNS = [
     ("shops", "pin_hash", "VARCHAR(64)"),  # pilot login
     ("shops", "failed_logins", "INTEGER NOT NULL DEFAULT 0"),  # pilot login
     ("shops", "locked_until", "TIMESTAMP"),  # pilot login
+    ("dues", "client_ref", "VARCHAR(40)"),  # offline entries
 ]
 
 

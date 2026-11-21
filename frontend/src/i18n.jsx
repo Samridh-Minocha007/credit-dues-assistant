@@ -112,6 +112,17 @@ const HI = {
   Account: "खाता",
   "Log out": "लॉग आउट",
 
+  "No internet. Saved on this phone; it will be sent automatically when you’re back online.":
+    "इंटरनेट नहीं है। फ़ोन में सेव कर लिया; इंटरनेट आते ही अपने आप भेज दिया जाएगा।",
+  "{n} entries saved on this phone, waiting for internet": "{n} एंट्री फ़ोन में सेव हैं, इंटरनेट का इंतज़ार",
+  "Send now": "अभी भेजें",
+  "Couldn’t save {phone}, ₹{bill}: {reason}": "{phone}, ₹{bill} सेव नहीं हुआ: {reason}",
+  Remove: "हटाएँ",
+  "Your data": "आपका डेटा",
+  "Download every bill and payment as a spreadsheet (opens in Excel or Google Sheets).":
+    "हर बिल और भुगतान स्प्रेडशीट में डाउनलोड करें (Excel या Google Sheets में खुलती है)।",
+  "Download data (CSV)": "डेटा डाउनलोड करें (CSV)",
+
   // Calls
   "Customers whose dues are old enough that a call works better than another message.":
     "जिनका उधार इतना पुराना है कि अब मैसेज से बेहतर कॉल करना है।",

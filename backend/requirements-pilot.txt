@@ -1,0 +1,3 @@
+# Extra packages for a hosted pilot with Postgres (not needed locally).
+-r requirements.txt
+psycopg[binary]>=3.1

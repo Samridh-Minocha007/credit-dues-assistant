@@ -14,7 +14,7 @@ from .config import settings
 from .db import Base, SessionLocal, engine, get_db
 from .models import Shop
 from . import clock
-from .routers import auth, calls, customers, dev, entries, incoming, messages, metrics, pay, sim
+from .routers import auth, calls, customers, dev, entries, export, incoming, messages, metrics, pay, sim
 from .routers import settings as settings_router
 from .services.scheduler import run_scheduler
 from .services.auth import shop_for_token
@@ -78,6 +78,7 @@ app.include_router(settings_router.router)
 app.include_router(entries.router)
 app.include_router(customers.router)
 app.include_router(calls.router)
+app.include_router(export.router)
 app.include_router(metrics.router)
 app.include_router(messages.router)
 app.include_router(pay.router)
@@ -89,3 +90,26 @@ app.include_router(dev.router)  # demo clock
 @app.get("/api/health")
 def health():
     return {"ok": True, "messaging": "simulated", "payments": "simulated"}
+
+
+# --- Hosted pilot: serve the built React app from this same server -----------
+# Set FRONTEND_DIST to the frontend's build folder (frontend/dist after
+# `npm run build`). Then one server handles both the app and the API, which
+# makes hosting much simpler. Locally (no FRONTEND_DIST) nothing changes.
+import os as _os  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+from fastapi.responses import FileResponse  # noqa: E402
+
+_dist = _Path(_os.getenv("FRONTEND_DIST", "")) if _os.getenv("FRONTEND_DIST") else None
+if _dist and (_dist / "index.html").exists():
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        file = (_dist / path).resolve()
+        # Serve real files (JS, CSS, icons); everything else is a screen of the app.
+        if path and file.is_file() and _dist.resolve() in file.parents:
+            return FileResponse(file)
+        return FileResponse(_dist / "index.html")
