@@ -12,9 +12,16 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BACKEND_DIR / ".env")  # loads backend/.env if it exists; does nothing otherwise
 
 
+# DEMO_MODE=1 switches to a separate database full of generated sample data
+# (see app/demo_seed.py), so demos never touch the real one.
+DEMO_MODE = os.getenv("DEMO_MODE") == "1"
+DB_FILE = BACKEND_DIR / ("demo.db" if DEMO_MODE else "dues.db")
+
+
 class Settings:
-    # Default: backend/dues.db, wherever the server is started from.
-    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{(BACKEND_DIR / 'dues.db').as_posix()}")
+    # Default: backend/dues.db (or backend/demo.db in demo mode), wherever the server is started from.
+    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DB_FILE.as_posix()}")
+    demo_mode: bool = DEMO_MODE
     gemini_api_key: str | None = os.getenv("GEMINI_API_KEY") or None
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     # Where the simulated payment page lives (the React app). Used to build links.

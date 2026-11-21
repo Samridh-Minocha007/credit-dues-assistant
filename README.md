@@ -32,3 +32,17 @@ Tests, from `backend/`:
 ```bash
 .venv/Scripts/python -m pytest
 ```
+
+## Demo shop (generated data)
+
+To explore a realistic shop (60 customers, 120 days of history), generate the demo database and start the
+backend in demo mode. Your real data in `backend/dues.db` is never touched.
+
+```bash
+cd backend
+.venv/Scripts/python -m app.demo_seed
+.venv/Scripts/python -m uvicorn app.main:app --env-file demo.env
+```
+
+See [docs/demo-script.md](docs/demo-script.md) for a 2-minute walk-through. The data comes from replaying
+the app's real rules with simulated customer behaviour, so describe any numbers from it as simulated.

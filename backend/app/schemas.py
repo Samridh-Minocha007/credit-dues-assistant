@@ -35,6 +35,7 @@ class SettingsOut(BaseModel):
     upi_id: str | None
     # Extra fields computed by the router, not stored:
     reply_reader: str = "rules"  # gemini (API key set) | rules
+    demo_mode: bool = False  # running on the generated demo database
     approved: bool = False
     preview: str = ""
 

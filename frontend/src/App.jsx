@@ -80,7 +80,7 @@ function ShopApp() {
   const brand = (
     <div className="brand">
       <strong>{shop?.name || "Your shop"}</strong>
-      <span>Concept prototype, all simulated</span>
+      <span>{shop?.demo_mode ? "Demo shop with generated data" : "Concept prototype, all simulated"}</span>
     </div>
   );
 

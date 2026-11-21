@@ -25,6 +25,7 @@ def _out(shop: Shop) -> SettingsOut:
     out = SettingsOut.model_validate(shop)
     out.approved = shop.settings_approved_at is not None
     out.reply_reader = "gemini" if app_settings.gemini_api_key else "rules"
+    out.demo_mode = app_settings.demo_mode
     out.preview = render(
         shop.message_template, name="Ramesh", shop=shop.name, amount="840", link="https://pay.example/abc123"
     )
