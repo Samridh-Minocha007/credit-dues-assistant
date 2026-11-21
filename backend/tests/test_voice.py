@@ -54,3 +54,54 @@ def test_endpoint(client):
     client.post("/api/entries", json={"phone": "9876543210", "bill_amount": "100", "name": "Ramesh Kumar"})
     r = client.post("/api/entries/parse-voice", json={"text": "Ramesh paanch sau do sau diye"}).json()
     assert r["bill"] == 500 and r["paid"] == 200 and r["phone"] == "9876543210"
+
+
+# ---- large amounts (reported: nothing above 1000 was understood) ----
+@pytest.mark.parametrize("text,bill", [
+    ("Ramesh 1500", 1500),
+    ("Ramesh 1,500", 1500),          # speech recognition writes commas in big numbers
+    ("Ramesh ₹2,500", 2500),
+    ("Ramesh 12,000", 12000),
+    ("Ramesh 1,25,000", 125000),     # Indian grouping
+    ("Ramesh 2500.50", 2500.5),
+    ("Ramesh fifteen hundred", 1500),
+    ("Ramesh one thousand two hundred fifty", 1250),
+    ("Ramesh two thousand five hundred", 2500),
+    ("Ramesh twelve thousand", 12000),
+    ("Ramesh ek sau pachaas", 150),
+    ("Ramesh do hazaar teen sau", 2300),
+    ("Ramesh barah hazaar", 12000),
+    ("Ramesh dedh hazaar", 1500),
+    ("Ramesh dhai hazaar", 2500),
+    ("Ramesh saadhe teen hazaar", 3500),
+    ("Ramesh ek lakh", 100000),
+    ("Ramesh 2 hazaar", 2000),
+    ("Ramesh 1.5 lakh", 150000),
+    ("रमेश दो हज़ार", 2000),
+])
+def test_large_amounts(text, bill):
+    assert parse_voice(text, PEOPLE).bill == bill
+
+
+def test_large_amounts_with_paid():
+    r = parse_voice("Ramesh 2,500 udhaar, 1,000 diye", PEOPLE)
+    assert (r.bill, r.paid) == (2500, 1000)
+    r = parse_voice("Ramesh paanch hazaar, do hazaar diye", PEOPLE)
+    assert (r.bill, r.paid) == (5000, 2000)
+
+
+@pytest.mark.parametrize("text,bill,paid", [
+    ("Ramesh 5000", 5000, None),
+    ("Ramesh 2 hazaar 500", 2500, None),          # speech recognition mixing words and digits
+    ("Ramesh twenty five hundred", 2500, None),
+    ("Ramesh 3,200 paid 1,200", 3200, 1200),
+    ("Ramesh 750 paid 250", 750, 250),             # digits never glued together
+])
+def test_more_amounts(text, bill, paid):
+    r = parse_voice(text, PEOPLE)
+    assert (r.bill, r.paid) == (bill, paid)
+
+
+def test_phone_and_big_amount():
+    r = parse_voice("98765 43210 2,500 udhaar", PEOPLE)
+    assert r.phone == "9876543210" and r.bill == 2500
