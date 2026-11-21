@@ -34,6 +34,7 @@ class SettingsOut(BaseModel):
     reply_parsing_enabled: bool
     upi_id: str | None
     # Extra fields computed by the router, not stored:
+    reply_reader: str = "rules"  # gemini (API key set) | rules
     approved: bool = False
     preview: str = ""
 
@@ -128,6 +129,7 @@ class MessageOut(BaseModel):
     scheduled_for: datetime | None
     sent_at: datetime | None
     created_at: datetime
+    parsed: str | None = None
 
 
 class OutboxRow(MessageOut):
@@ -228,6 +230,8 @@ class PromiseOut(BaseModel):
     promised_date: date
     source: str
     raw_text: str | None
+    parsed_by: str | None = None
+    confidence: float | None = None
     status: str
     followup_sent_at: datetime | None
     created_at: datetime

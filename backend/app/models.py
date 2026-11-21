@@ -10,7 +10,7 @@ promises and call outcomes. Promises and call outcomes come in later slices.
 """
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -178,6 +178,10 @@ class Message(Base):
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
+    # For replies read by the experiment: what the reader decided, as JSON
+    # ({"intent", "promised_date", "confidence", "parsed_by"}). Kept for every
+    # reply, promise or not, so we can measure how accurate the reader is.
+    parsed: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
     customer: Mapped[Customer] = relationship(back_populates="messages")
 
@@ -242,7 +246,9 @@ class Promise(Base):
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), index=True)
     promised_date: Mapped[date] = mapped_column(Date)
     source: Mapped[str] = mapped_column(String(10))  # call | reply
-    raw_text: Mapped[str | None] = mapped_column(String(300), nullable=True)  # the reply, for slice 5
+    raw_text: Mapped[str | None] = mapped_column(String(300), nullable=True)  # the customer's reply
+    parsed_by: Mapped[str | None] = mapped_column(String(10), nullable=True)  # gemini | rules (reply promises)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     # pending | kept (paid in full) | broken (date passed, still owing) | replaced (a newer promise or outcome)
     status: Mapped[str] = mapped_column(String(10), default="pending")
     followup_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

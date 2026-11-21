@@ -95,7 +95,7 @@ export default function CustomerPhone({ token, startOnPay = false }) {
                 }}
               >
                 <div className="quick" aria-label="Try a reply">
-                  {["STOP", "START", "kal dunga"].map((t) => (
+                  {["kal dunga", "parso de dunga", "will pay Friday", "jaldi dunga", "de diya", "STOP"].map((t) => (
                     <button type="button" key={t} onClick={() => send(t)} disabled={sending}>
                       {t}
                     </button>

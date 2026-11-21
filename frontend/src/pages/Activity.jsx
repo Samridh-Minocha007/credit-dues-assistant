@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { MESSAGE_KIND, api, initial, longWhen, messageStatus, rupees, setClockOffset, shortWhen } from "../api/client.js";
+import { MESSAGE_KIND, api, initial, longWhen, messageStatus, replyReading, rupees, setClockOffset, shortWhen } from "../api/client.js";
+import { ReadingNote } from "./Customers.jsx";
 import { IconRefresh } from "../icons.jsx";
 
 // Everything that went out to customers or came in from them, grouped by
@@ -121,7 +122,9 @@ function groupByCustomer({ messages, payments, customers }, filter) {
     }
 
   const list = [...groups.values()];
-  for (const g of list) g.events.sort((a, b) => (a.at < b.at ? 1 : -1));
+  // Newest first; events in the same second are ordered by id (the order they happened).
+  const seq = (e) => (e.type === "message" ? e.m.id : e.p.id);
+  for (const g of list) g.events.sort((a, b) => (a.at !== b.at ? (a.at < b.at ? 1 : -1) : seq(b) - seq(a)));
   // Most recent activity first; the "not linked" group always goes last.
   return list.sort((a, b) => (a.unlinked - b.unlinked) || (a.events[0].at < b.events[0].at ? 1 : -1));
 }
@@ -166,7 +169,10 @@ function CustomerGroup({ g, open, onToggle }) {
 function summary(e) {
   if (e.type === "payment") return `${rupees(e.p.amount_paise)} UPI payment, ${PAYMENT_STATUS[e.p.status]}`;
   const m = e.m;
-  if (m.direction === "in") return `They replied “${m.body}”`;
+  if (m.direction === "in") {
+    const r = replyReading(m);
+    return r && r.kind !== "other" ? `They replied “${m.body}”. ${r.text}` : `They replied “${m.body}”`;
+  }
   return `${MESSAGE_KIND[m.kind] || "Message"}: ${messageStatus(m).toLowerCase()}`;
 }
 
@@ -181,6 +187,7 @@ function MessageEvent({ m }) {
           {!inbound && <span className={`tag ${m.status === "scheduled" ? "held" : ""}`}>{messageStatus(m)}</span>}
         </div>
         <div className="msg">{inbound ? `“${m.body}”` : m.body}</div>
+        {inbound && replyReading(m) && <ReadingNote r={replyReading(m)} />}
       </div>
       <span />
     </li>

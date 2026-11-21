@@ -13,6 +13,14 @@ from app.db import Base, get_db
 from app.main import app
 
 
+@pytest.fixture(autouse=True)
+def no_real_gemini(monkeypatch):
+    """Tests never call the real Gemini API, even if backend/.env has a key."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "gemini_api_key", None)
+
+
 @pytest.fixture
 def client():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)

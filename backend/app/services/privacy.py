@@ -13,9 +13,11 @@ from sqlalchemy import delete, update
 from sqlalchemy.orm import Session
 
 from .. import clock
-from ..models import Customer, CustomerUpiId, IncomingPayment, LineItem, Message, Shop
+from ..models import Customer, CustomerUpiId, IncomingPayment, LineItem, Message, Promise, Shop
 from . import templates
 from .messaging import queue_message
+from .payments import customer_balance
+from .reply_parser import parse_reply
 
 STOP_WORDS = {"stop", "unsubscribe", "band karo", "band", "बंद", "बंद करो"}
 START_WORDS = {"start", "chalu karo", "शुरू"}
@@ -38,8 +40,9 @@ def opt_in(db: Session, customer: Customer) -> None:
 
 def handle_reply(db: Session, shop: Shop, customer: Customer, text: str) -> Message:
     """A customer sent a message to the shop (simulated). Stored as an inbound
-    message. STOP/START are handled here; reading promises like "kal dunga"
-    comes in slice 5."""
+    message. STOP/START always work. Everything else is read for a promise
+    ONLY when the shop has the experiment switched on; otherwise it's just
+    stored (the baseline we compare against)."""
     now = clock.now()
     text = text.strip()
     inbound = Message(customer=customer, direction="in", kind="reply", body=text, status="received", sent_at=now, created_at=now)
@@ -54,8 +57,39 @@ def handle_reply(db: Session, shop: Shop, customer: Customer, text: str) -> Mess
     elif word in START_WORDS and customer.opted_out_at is not None:
         opt_in(db, customer)
         queue_message(db, shop, customer, "opt_in_confirm", templates.opt_in_confirm(shop=shop.name), force=True)
+    elif word not in STOP_WORDS | START_WORDS and shop.reply_parsing_enabled and customer_balance(customer) > 0:
+        read_promise(db, shop, customer, inbound, now)
     db.commit()
     return inbound
+
+
+def read_promise(db: Session, shop: Shop, customer: Customer, inbound: Message, now) -> Promise | None:
+    """The experiment: turn "kal dunga" into a promise with a date."""
+    parsed = parse_reply(inbound.body, now.date())
+    inbound.parsed = parsed.to_json()
+    if not parsed.is_usable_promise:
+        return None  # stored for the shopkeeper to read; nothing automatic
+    for p in customer.promises:
+        if p.status == "pending":
+            p.status = "replaced"
+    promise = Promise(
+        customer=customer,
+        promised_date=parsed.promised_date,
+        source="reply",
+        raw_text=inbound.body,
+        parsed_by=parsed.parsed_by,
+        confidence=parsed.confidence,
+        status="pending",
+        created_at=now,
+    )
+    db.add(promise)
+    if customer.collection_status == "disputed":
+        customer.collection_status = "normal"  # they've agreed to pay
+    if customer.opted_out_at is None:
+        # A direct answer to their message, so it goes out now, even at night.
+        when = parsed.promised_date.strftime("%A %d %B")
+        queue_message(db, shop, customer, "promise_ack", templates.promise_ack(shop=shop.name, when=when), force=True)
+    return promise
 
 
 def delete_customer_data(db: Session, customer: Customer) -> None:

@@ -188,7 +188,13 @@ export default function Settings({ onSaved }) {
           <span>
             Read customer replies like “kal dunga” and note the promised date
             <span className="hint" style={{ display: "block" }}>
-              Turn on for some shops and off for others to compare recovery against plain weekly reminders.
+              Turn on for some shops and off for others to compare recovery against plain weekly reminders. A clear
+              promise pauses reminders until that date; anything unclear is left for you to read.
+            </span>
+            <span className="hint" style={{ display: "block", marginTop: 4 }}>
+              {s.reply_reader === "gemini"
+                ? "Replies are read by Gemini, with the built-in reader as a backup. Only the reply text is sent, never names or numbers."
+                : "Replies are read by the built-in reader (common Hindi, Hinglish and English phrases). Add GEMINI_API_KEY to backend/.env to use Gemini."}
             </span>
           </span>
         </label>

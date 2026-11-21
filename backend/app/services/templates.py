@@ -64,3 +64,7 @@ def promise_followup(*, name: str | None, shop: str, amount: str, link: str) -> 
         f"Namaste {name or 'ji'}, a gentle reminder from {shop} about the payment you planned for today. "
         f"Pending: Rs {amount}. Pay here: {link} {OPT_OUT_LINE}"
     )
+
+
+def promise_ack(*, shop: str, when: str) -> str:
+    return f"Thank you! {shop} has noted that you'll pay by {when}. We won't send reminders until then."

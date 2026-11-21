@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import clock
+from ..config import settings as app_settings
 from ..db import get_db
 from ..models import Shop
 from ..schemas import SettingsOut, SettingsUpdate
@@ -23,6 +24,7 @@ NEEDS_REAPPROVAL = {"message_template", "reminder_day", "reminder_time"}
 def _out(shop: Shop) -> SettingsOut:
     out = SettingsOut.model_validate(shop)
     out.approved = shop.settings_approved_at is not None
+    out.reply_reader = "gemini" if app_settings.gemini_api_key else "rules"
     out.preview = render(
         shop.message_template, name="Ramesh", shop=shop.name, amount="840", link="https://pay.example/abc123"
     )

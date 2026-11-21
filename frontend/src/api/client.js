@@ -64,6 +64,7 @@ export const MESSAGE_KIND = {
   promise_followup: "Promise follow-up",
   opt_out_confirm: "Opt-out confirmation",
   opt_in_confirm: "Messages back on",
+  promise_ack: "Promise noted",
   reply: "Reply from customer",
 };
 
@@ -120,4 +121,18 @@ export function daysAgo(isoDate) {
   if (!isoDate) return "";
   const days = Math.floor((appNow().getTime() - new Date(isoDate).getTime()) / 86_400_000);
   return days <= 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
+}
+
+// What the reply reader (the experiment) understood from a customer's reply.
+// Returns null if the reply wasn't read (experiment off, or STOP/START).
+export function replyReading(m) {
+  if (!m.parsed) return null;
+  const p = JSON.parse(m.parsed);
+  const by = p.parsed_by === "gemini" ? "Gemini" : "built-in reader";
+  if (p.intent === "promise" && p.promised_date && p.confidence >= 0.6) {
+    const d = new Date(p.promised_date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    return { kind: "promise", text: `Read as a promise to pay by ${d}`, by };
+  }
+  if (p.intent === "already_paid") return { kind: "paid", text: "Says they already paid. Please check.", by };
+  return { kind: "other", text: "Not a clear promise. Nothing done automatically.", by };
 }

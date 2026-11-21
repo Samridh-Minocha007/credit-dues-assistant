@@ -21,6 +21,9 @@ ADDED_COLUMNS = [
     ("shops", "demo_clock_offset_s", "INTEGER NOT NULL DEFAULT 0"),  # slice 3
     ("customers", "deleted_at", "DATETIME"),  # slice 3
     ("customers", "collection_status", "VARCHAR(20) NOT NULL DEFAULT 'normal'"),  # slice 4
+    ("promises", "parsed_by", "VARCHAR(10)"),  # slice 5
+    ("promises", "confidence", "FLOAT"),  # slice 5
+    ("messages", "parsed", "VARCHAR(300)"),  # slice 5
 ]
 
 

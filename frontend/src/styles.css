@@ -404,3 +404,9 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 .call-card .call-btn { background: var(--call); border-color: var(--call); color: white; text-decoration: none; }
 .call-card .call-btn:hover { background: #253f94; border-color: #253f94; }
 .call-card .outcomes, .call-card .outcome-form { border-top-color: #cdd6f4; }
+
+/* ---------- what the reply reader understood ---------- */
+.reading { margin-top: 6px; font-size: var(--t-xs); padding: 4px 10px; border-radius: var(--r-sm); display: inline-block; }
+.reading.promise { background: var(--call-soft); color: #23397f; }
+.reading.paid { background: var(--haldi-soft); color: #6b5200; }
+.reading.other { background: var(--paper); color: var(--ink-2); border: 1px solid var(--line); }

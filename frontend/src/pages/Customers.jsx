@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MESSAGE_KIND, api, daysAgo, initial, messageStatus, rupees, shortWhen } from "../api/client.js";
+import { MESSAGE_KIND, api, daysAgo, initial, messageStatus, replyReading, rupees, shortWhen } from "../api/client.js";
 import { IconBack, IconPhone } from "../icons.jsx";
 
 // After a delete the phone number is gone (replaced by a placeholder), so
@@ -106,7 +106,7 @@ function CustomerDetail({ id, onBack }) {
     ...c.call_outcomes.map((o) => ({ at: o.created_at, kind: "call", o, promise: c.promises.find((p) => p.id === o.promise_id) })),
     // Promises from replies (slice 5) have no call; show them on their own.
     ...c.promises.filter((p) => p.source !== "call").map((p) => ({ at: p.created_at, kind: "promise", p })),
-  ].sort((a, b) => (a.at < b.at ? 1 : -1));
+  ].sort(newestFirst);
 
   return (
     <>
@@ -169,6 +169,14 @@ function CustomerDetail({ id, onBack }) {
   );
 }
 
+// Newest first. Events in the same second (a reply and the promise read from
+// it) are ordered by message id, with promises/calls shown above the reply.
+function newestFirst(a, b) {
+  if (a.at !== b.at) return a.at < b.at ? 1 : -1;
+  const rank = (e) => (e.kind === "message" ? e.m.id : Number.MAX_SAFE_INTEGER);
+  return rank(b) - rank(a);
+}
+
 const STATE_LINE = {
   to_call: (c) => `On your call list: ${c.collection_reason.toLowerCase()}. Automatic reminders have stopped.`,
   promised: (c) => `${c.collection_reason}. Reminders are paused until then.`,
@@ -210,9 +218,12 @@ function HistoryRow({ h }) {
     return (
       <li>
         <span className="when">{shortWhen(h.at)}</span>
-        <div className="what">
-          Promised in a reply to pay by {promiseDate(h.p.promised_date)}
-          <span className="tag">{PROMISE_STATUS[h.p.status]}</span>
+        <div>
+          <div className="what">
+            <strong>Promised by reply</strong> to pay by {promiseDate(h.p.promised_date)}
+            <span className="tag">{PROMISE_STATUS[h.p.status]}</span>
+          </div>
+          <div className="msg">From “{h.p.raw_text}”</div>
         </div>
         <span />
       </li>
@@ -250,6 +261,7 @@ function HistoryRow({ h }) {
   }
   const m = h.m;
   const inbound = m.direction === "in";
+  const reading = inbound ? replyReading(m) : null;
   return (
     <li className="is-message">
       <span className="when">{shortWhen(h.at)}</span>
@@ -259,6 +271,7 @@ function HistoryRow({ h }) {
           {!inbound && <span className={`tag ${m.status === "scheduled" ? "held" : ""}`}>{messageStatus(m)}</span>}
         </div>
         <div className="msg">{inbound ? `“${m.body}”` : m.body}</div>
+        {reading && <ReadingNote r={reading} />}
       </div>
       <span />
     </li>
@@ -317,6 +330,15 @@ function CustomerControls({ c, onChange }) {
         </div>
       )}
       {error && <div className="notice error">{error}</div>}
+    </div>
+  );
+}
+
+// Shown under a customer's reply when the experiment read it.
+export function ReadingNote({ r }) {
+  return (
+    <div className={`reading ${r.kind}`}>
+      {r.text} <span className="hint">({r.by})</span>
     </div>
   );
 }
