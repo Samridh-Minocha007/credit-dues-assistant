@@ -189,6 +189,15 @@ function AddCredit({ onSaved }) {
           {match.opted_out && <> {t("Opted out of messages.")}</>}
         </p>
       )}
+      {match && match !== "new" && match.credit_limit_paise != null && credit > 0 &&
+        match.balance_paise + Math.round(credit * 100) > match.credit_limit_paise && (
+          <p className="limit-warn" role="alert">
+            {t("This takes them over their credit limit of {limit} (they would owe {total}). You can still save it.", {
+              limit: rupees(match.credit_limit_paise),
+              total: rupees(match.balance_paise + Math.round(credit * 100)),
+            })}
+          </p>
+        )}
       {match === "new" && (
         <label className="field">
           {t("New customer. Name (optional)")}

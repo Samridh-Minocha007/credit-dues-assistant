@@ -53,6 +53,12 @@ class Shop(Base):
     upi_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     # Language of every message sent to customers: "en" or "hi" (Hindi).
     message_language: Mapped[str] = mapped_column(String(2), default="en")
+    # Credit limit used for customers without their own (None = no limit).
+    # A warning only: the shopkeeper decides. Not a credit score.
+    default_credit_limit_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Experiments for the next round (see docs/decisions.md):
+    part_payment_nudge: Mapped[bool] = mapped_column(Boolean, default=False)  # "even Rs X today helps"
+    payday_reminder: Mapped[bool] = mapped_column(Boolean, default=False)  # extra reminder on the 1st
 
     # When the reminder timer last ran. Each run handles every weekly slot
     # since then, so nothing is missed if the server was off for a while
@@ -93,6 +99,8 @@ class Customer(Base):
     # amount: no messages, off the call list, until resolved or written off).
     # Promises are tracked in their own table, not here.
     collection_status: Mapped[str] = mapped_column(String(20), default="normal")
+    # The shopkeeper's own limit for this customer (overrides the shop default).
+    credit_limit_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     dues: Mapped[list["Due"]] = relationship(back_populates="customer", order_by="Due.created_at")
     payments: Mapped[list["Payment"]] = relationship(back_populates="customer", order_by="Payment.paid_at")

@@ -41,6 +41,28 @@ from .money import format_rupees
 from .payments import customer_balance
 
 CAP_WINDOW = timedelta(days=30)
+REMINDER_KINDS = ("weekly_reminder", "payday_reminder")  # both count towards the monthly limit
+NUDGE_MIN_PAISE = 20000  # only suggest a part payment when Rs 200 or more is owed
+
+
+def nudge_amount(balance_paise: int) -> int | None:
+    """About half the balance, rounded down to Rs 50, at least Rs 50."""
+    if balance_paise < NUDGE_MIN_PAISE:
+        return None
+    half = (balance_paise // 2) // 5000 * 5000
+    return max(5000, half)
+
+
+def payday_slots(shop: Shop, after: datetime, upto: datetime) -> list[datetime]:
+    """The 1st of each month at the reminder time, with after < slot <= upto."""
+    h, m = map(int, shop.reminder_time.split(":"))
+    slot = datetime(after.year, after.month, 1, h, m)
+    out = []
+    while slot <= upto:
+        if slot > after:
+            out.append(slot)
+        slot = datetime(slot.year + (slot.month == 12), slot.month % 12 + 1, 1, h, m)
+    return out
 
 
 @dataclass
@@ -79,7 +101,7 @@ def deliver_held(db: Session, shop: Shop, upto: datetime, summary: RunSummary) -
         c = msg.customer
         if c.opted_out_at is not None or c.deleted_at is not None:
             msg.status = "blocked_opt_out"  # they opted out while it was waiting
-        elif msg.kind == "weekly_reminder" and customer_balance(c) == 0:
+        elif msg.kind in REMINDER_KINDS and customer_balance(c) == 0:
             msg.status = "cancelled_paid"  # they paid before it went out
             summary.cancelled_paid += 1
         else:
@@ -93,7 +115,7 @@ def _reminders_in_window(db: Session, customer: Customer, slot: datetime) -> int
         db.scalars(
             select(Message.id).where(
                 Message.customer_id == customer.id,
-                Message.kind == "weekly_reminder",
+                Message.kind.in_(REMINDER_KINDS),
                 Message.status.in_(("sent_sim", "scheduled")),
                 Message.created_at > slot - CAP_WINDOW,
                 Message.created_at <= slot,
@@ -102,7 +124,7 @@ def _reminders_in_window(db: Session, customer: Customer, slot: datetime) -> int
     )
 
 
-def send_weekly(db: Session, shop: Shop, slot: datetime, summary: RunSummary) -> None:
+def send_weekly(db: Session, shop: Shop, slot: datetime, summary: RunSummary, kind: str = "weekly_reminder") -> None:
     if shop.settings_approved_at is None or shop.settings_approved_at > slot:
         return  # not approved (yet) at this slot: no automatic reminders
     customers = db.scalars(
@@ -115,10 +137,13 @@ def send_weekly(db: Session, shop: Shop, slot: datetime, summary: RunSummary) ->
         if not gets_automatic_reminders(shop, c, slot):
             continue  # on the call list, waiting on a promise, or disputed
         already = db.scalar(
-            select(Message.id).where(Message.customer_id == c.id, Message.kind == "weekly_reminder", Message.created_at == slot)
+            select(Message.id).where(
+                Message.customer_id == c.id, Message.kind.in_(REMINDER_KINDS), Message.created_at >= slot.replace(hour=0, minute=0)
+                , Message.created_at <= slot
+            )
         )
         if already:
-            continue  # this Sunday was already handled (e.g. demo clock reset and replayed)
+            continue  # already reminded at this slot or earlier that day (demo clock replay, or 1st falls on a Sunday)
         balance = customer_balance(c)
         body = templates.render(
             shop.message_template,
@@ -127,12 +152,13 @@ def send_weekly(db: Session, shop: Shop, slot: datetime, summary: RunSummary) ->
             amount=format_rupees(balance),
             link=pay_link(c) if shop.upi_id else "(please pay at the shop)",
             lang=shop.message_language,
+            nudge=format_rupees(nudge_amount(balance)) if shop.part_payment_nudge and nudge_amount(balance) else None,
         )
         if _reminders_in_window(db, c, slot) >= shop.max_reminders_per_month:
-            db.add(Message(customer=c, direction="out", kind="weekly_reminder", body=body, status="blocked_cap", created_at=slot))
+            db.add(Message(customer=c, direction="out", kind=kind, body=body, status="blocked_cap", created_at=slot))
             summary.blocked_cap += 1
             continue
-        queue_message(db, shop, c, "weekly_reminder", body, at=slot)
+        queue_message(db, shop, c, kind, body, at=slot)
         summary.reminders_sent += 1
 
 
@@ -168,9 +194,13 @@ def run_scheduler(db: Session, shop: Shop) -> RunSummary:
     # First ever run: start from now. Don't send reminders for slots that
     # passed before the timer existed.
     last = shop.scheduler_last_run_at or now
-    for slot in weekly_slots(shop, last, now):
+    # Weekly slots, plus the 1st of each month if the payday experiment is on, in time order.
+    slots = [(s, "weekly_reminder") for s in weekly_slots(shop, last, now)]
+    if shop.payday_reminder:
+        slots += [(s, "payday_reminder") for s in payday_slots(shop, last, now)]
+    for slot, kind in sorted(slots):
         deliver_held(db, shop, slot, summary)  # morning messages before this slot first
-        send_weekly(db, shop, slot, summary)
+        send_weekly(db, shop, slot, summary, kind)
         db.flush()  # so the next slot's monthly-limit count sees these reminders
         summary.slots.append(slot)
     process_promises(db, shop, now, summary)

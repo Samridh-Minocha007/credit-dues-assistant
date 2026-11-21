@@ -68,10 +68,21 @@ def validate_template(template: str) -> None:
         raise InvalidTemplate(f"Wording must include: {', '.join('{' + m + '}' for m in sorted(missing))}")
 
 
-def render(template: str, *, name: str | None, shop: str, amount: str, link: str, lang: str = "en") -> str:
+def render(
+    template: str, *, name: str | None, shop: str, amount: str, link: str, lang: str = "en", nudge: str | None = None
+) -> str:
     lang = _lang(lang)
     body = template.format(name=_who(name, lang), shop=shop, amount=amount, link=link)
+    if nudge:
+        body += " " + nudge_line(nudge, lang)
     return f"{body} {OPT_OUT_LINE[lang]}"
+
+
+def nudge_line(amount: str, lang: str = "en") -> str:
+    """The part-payment nudge: a smaller first step is easier to say yes to."""
+    if _lang(lang) == "hi":
+        return f"आज ₹{amount} भी दे दें तो बहुत मदद होगी।"
+    return f"Even Rs {amount} today would help."
 
 
 def bill_notice(*, name: str | None, shop: str, credit: str, total: str, link: str | None, lang: str = "en") -> str:

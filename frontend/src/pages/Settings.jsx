@@ -33,6 +33,9 @@ export default function Settings({ onSaved }) {
       quiet_end: settings.quiet_end,
       max_reminders_per_month: settings.max_reminders_per_month,
       reply_parsing_enabled: settings.reply_parsing_enabled,
+      default_credit_limit: settings.default_credit_limit_paise != null ? String(settings.default_credit_limit_paise / 100) : "",
+      part_payment_nudge: settings.part_payment_nudge,
+      payday_reminder: settings.payday_reminder,
     });
   }
 
@@ -44,6 +47,7 @@ export default function Settings({ onSaved }) {
   const payload = () => ({
     ...d,
     upi_id: d.upi_id || null,
+    default_credit_limit: d.default_credit_limit || "0",
     reminder_day: Number(d.reminder_day),
     escalation_days: Number(d.escalation_days),
     escalation_min_days: Number(d.escalation_min_days),
@@ -209,7 +213,35 @@ export default function Settings({ onSaved }) {
       </section>
 
       <section className="settings-group">
+        <h2>{t("Credit limit")}</h2>
+        <p>{t("A warning when a sale would take a customer over this amount. It never blocks the sale.")}</p>
+        <label className="field">
+          {t("Default limit for every customer, ₹ (empty = no limit)")}
+          <input className="input" inputMode="decimal" value={d.default_credit_limit} onChange={set("default_credit_limit")} style={{ maxWidth: 200 }} />
+        </label>
+        <p className="hint">{t("You can set a different limit for one customer on their page.")}</p>
+      </section>
+
+      <section className="settings-group">
         <h2>{t("Experiment")}</h2>
+        <label className="toggle">
+          <input type="checkbox" checked={d.part_payment_nudge} onChange={set("part_payment_nudge")} />
+          <span>
+            {t("Suggest a part payment in reminders")}
+            <span className="hint" style={{ display: "block" }}>
+              {t("Adds “Even ₹X today would help” (about half of what they owe) when they owe ₹200 or more.")}
+            </span>
+          </span>
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={d.payday_reminder} onChange={set("payday_reminder")} />
+          <span>
+            {t("Extra reminder on the 1st of the month")}
+            <span className="hint" style={{ display: "block" }}>
+              {t("Many people are paid around the 1st. Counts towards the monthly limit.")}
+            </span>
+          </span>
+        </label>
         <label className="toggle">
           <input type="checkbox" checked={d.reply_parsing_enabled} onChange={set("reply_parsing_enabled")} />
           <span>

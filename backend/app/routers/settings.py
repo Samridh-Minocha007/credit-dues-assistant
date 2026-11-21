@@ -54,6 +54,9 @@ def update_settings(body: SettingsUpdate, db: Session = Depends(get_db)):
     if new_lang and new_lang != shop.message_language and "message_template" not in changes:
         if shop.message_template == DEFAULT_TEMPLATES.get(shop.message_language):
             changes["message_template"] = DEFAULT_TEMPLATES[new_lang]
+    if "default_credit_limit" in changes:
+        limit = to_paise(changes.pop("default_credit_limit"))
+        changes["default_credit_limit_paise"] = limit or None  # 0 means "no limit"
     if "escalation_amount" in changes:
         changes["escalation_amount_paise"] = to_paise(changes.pop("escalation_amount"))
 

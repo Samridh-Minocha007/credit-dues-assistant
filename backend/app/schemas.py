@@ -34,6 +34,9 @@ class SettingsOut(BaseModel):
     reply_parsing_enabled: bool
     upi_id: str | None
     message_language: str = "en"
+    default_credit_limit_paise: int | None = None
+    part_payment_nudge: bool = False
+    payday_reminder: bool = False
     # Extra fields computed by the router, not stored:
     reply_reader: str = "rules"  # gemini (API key set) | rules
     demo_mode: bool = False  # running on the generated demo database
@@ -57,6 +60,9 @@ class SettingsUpdate(BaseModel):
     reply_parsing_enabled: bool | None = None
     upi_id: str | None = Field(default=None, max_length=100)
     message_language: str | None = Field(default=None, pattern="^(en|hi)$")
+    default_credit_limit: Rupees | None = Field(default=None, ge=0)  # 0 = no limit
+    part_payment_nudge: bool | None = None
+    payday_reminder: bool | None = None
 
     @field_validator("upi_id")
     @classmethod
@@ -119,6 +125,8 @@ class CustomerSummary(BaseModel):
     oldest_open_due_at: datetime | None
     opted_out: bool
     deleted: bool = False
+    credit_limit_paise: int | None = None  # effective limit (own or shop default)
+    own_credit_limit_paise: int | None = None  # set just for this customer
 
 
 class MessageOut(BaseModel):
@@ -145,6 +153,7 @@ class EntryOut(BaseModel):
     due: DueOut
     is_new_customer: bool
     message: MessageOut
+    over_limit: bool = False  # this sale took them past their credit limit
 
 
 class PaymentIn(BaseModel):
@@ -321,3 +330,10 @@ class OutcomeIn(BaseModel):
 
 class ResolveIn(BaseModel):
     note: str | None = Field(default=None, max_length=300)
+
+
+class CustomerUpdate(BaseModel):
+    """Edit a customer's name or credit limit. Send credit_limit 0 to remove it."""
+
+    name: str | None = Field(default=None, max_length=100)
+    credit_limit: Rupees | None = Field(default=None, ge=0)

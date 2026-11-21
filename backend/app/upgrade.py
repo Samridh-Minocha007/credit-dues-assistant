@@ -26,6 +26,10 @@ ADDED_COLUMNS = [
     ("messages", "parsed", "VARCHAR(300)"),  # slice 5
     ("dues", "variant", "VARCHAR(12)"),  # slice 6
     ("shops", "message_language", "VARCHAR(2) NOT NULL DEFAULT 'en'"),  # Hindi messages
+    ("shops", "default_credit_limit_paise", "INTEGER"),  # credit limit
+    ("customers", "credit_limit_paise", "INTEGER"),  # credit limit
+    ("shops", "part_payment_nudge", "BOOLEAN NOT NULL DEFAULT 0"),  # nudge experiment
+    ("shops", "payday_reminder", "BOOLEAN NOT NULL DEFAULT 0"),  # payday experiment
 ]
 
 

@@ -442,3 +442,6 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 .server-down { background: var(--danger-soft); border-left: 4px solid var(--due); border-radius: 0 var(--r-md) var(--r-md) 0; padding: 14px 16px; margin-bottom: 20px; font-size: var(--t-sm); }
 .server-down code { background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
 .server-down .btn-text { color: var(--due); padding: 0; }
+
+/* ---------- credit limit warning ---------- */
+.limit-warn { font-size: var(--t-sm); padding: 8px 12px; border-radius: var(--r-sm); background: var(--danger-soft); color: #8a1f17; }

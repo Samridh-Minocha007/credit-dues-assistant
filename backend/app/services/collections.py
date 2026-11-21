@@ -62,7 +62,7 @@ def active_promise(c: Customer, today: date) -> Promise | None:
 
 
 def last_reminder_at(c: Customer) -> datetime | None:
-    sent = [m.sent_at for m in c.messages if m.kind in ("weekly_reminder", "promise_followup") and m.status == "sent_sim" and m.sent_at]
+    sent = [m.sent_at for m in c.messages if m.kind in ("weekly_reminder", "payday_reminder", "promise_followup") and m.status == "sent_sim" and m.sent_at]
     return max(sent) if sent else None
 
 

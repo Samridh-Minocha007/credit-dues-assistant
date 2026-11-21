@@ -11,11 +11,12 @@ from ..schemas import (
     MessageOut,
     PaymentIn,
     PaymentOut,
+    CustomerUpdate,
     PaymentResultOut,
     PromiseOut,
 )
 from ..services.collections import collection_info
-from ..services.customers import CustomerRow, list_customers
+from ..services.customers import CustomerRow, effective_limit, list_customers
 from ..services.messaging import pay_link
 from ..services.money import to_paise
 from ..services.payments import PaymentError, record_payment
@@ -25,8 +26,10 @@ from ..services.shop import get_or_create_shop
 router = APIRouter(prefix="/api/customers", tags=["customers"])
 
 
-def _summary(r: CustomerRow) -> CustomerSummary:
+def _summary(r: CustomerRow, shop) -> CustomerSummary:
     return CustomerSummary(
+        credit_limit_paise=effective_limit(shop, r.customer),
+        own_credit_limit_paise=r.customer.credit_limit_paise,
         id=r.customer.id,
         phone=r.customer.phone,
         name=r.customer.name,
@@ -41,7 +44,8 @@ def _summary(r: CustomerRow) -> CustomerSummary:
 @router.get("", response_model=list[CustomerSummary])
 def search_customers(q: str | None = Query(default=None, max_length=50), db: Session = Depends(get_db)):
     """Used for the list screen and for autocomplete while typing a phone number."""
-    return [_summary(r) for r in list_customers(db, get_or_create_shop(db), q=q)]
+    shop = get_or_create_shop(db)
+    return [_summary(r, shop) for r in list_customers(db, shop, q=q)]
 
 
 def _get(db: Session, customer_id: int) -> Customer:
@@ -70,6 +74,8 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
         created_at=c.created_at,
         deleted=c.deleted_at is not None,
         deleted_at=c.deleted_at,
+        credit_limit_paise=effective_limit(get_or_create_shop(db), c),
+        own_credit_limit_paise=c.credit_limit_paise,
         pay_link=pay_link(c) if c.pay_token else None,
         # Newest first everywhere, so the latest activity is at the top.
         dues=[DueOut.model_validate(d) for d in reversed(c.dues)],
@@ -120,4 +126,20 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
         delete_customer_data(db, _get(db, customer_id))
     except PrivacyError as e:
         raise HTTPException(422, str(e))
+    return get_customer(customer_id, db)
+
+
+
+@router.patch("/{customer_id}", response_model=CustomerDetail)
+def update_customer(customer_id: int, body: CustomerUpdate, db: Session = Depends(get_db)):
+    c = _get(db, customer_id)
+    if c.deleted_at is not None:
+        raise HTTPException(422, "This customer's data was deleted")
+    changes = body.model_dump(exclude_unset=True)
+    if "name" in changes:
+        c.name = (changes["name"] or "").strip() or None
+    if "credit_limit" in changes:
+        limit = to_paise(changes["credit_limit"]) if changes["credit_limit"] is not None else 0
+        c.credit_limit_paise = limit or None  # 0 removes the customer's own limit
+    db.commit()
     return get_customer(customer_id, db)

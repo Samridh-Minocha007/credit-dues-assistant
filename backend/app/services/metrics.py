@@ -37,7 +37,7 @@ from ..models import CallOutcome, Customer, Due, Message, Promise, Shop
 
 WINDOW = timedelta(days=30)
 SMALL_GROUP = 20  # below this many mature bills per arm, warn that differences may be chance
-REMINDER_KINDS = ("weekly_reminder", "promise_followup")
+REMINDER_KINDS = ("weekly_reminder", "payday_reminder", "promise_followup")
 AGE_BUCKETS = [(0, 7, "0-7 days"), (8, 14, "8-14 days"), (15, 30, "15-30 days"), (31, 60, "31-60 days"), (61, None, "Over 60 days")]
 
 

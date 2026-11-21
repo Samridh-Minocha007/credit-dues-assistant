@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..schemas import CustomerSummary, DueOut, EntryIn, EntryOut, MessageOut
-from ..services.customers import list_customers
+from ..services.customers import effective_limit, list_customers
 from ..services.entries import EntryError, ItemInput, record_entry
 from ..services.phone import InvalidPhone
 from ..services.shop import get_or_create_shop
@@ -39,7 +39,10 @@ def create_entry(body: EntryIn, db: Session = Depends(get_db)):
             oldest_open_due_at=row.oldest_open_due_at,
             opted_out=row.customer.opted_out_at is not None,
             deleted=False,
+            credit_limit_paise=effective_limit(shop, row.customer),
+            own_credit_limit_paise=row.customer.credit_limit_paise,
         ),
+        over_limit=(lambda lim: lim is not None and row.balance_paise > lim)(effective_limit(shop, row.customer)),
         due=DueOut.model_validate(result.due),
         is_new_customer=result.is_new_customer,
         message=MessageOut.model_validate(result.message),

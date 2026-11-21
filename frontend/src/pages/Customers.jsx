@@ -280,6 +280,46 @@ function HistoryRow({ h }) {
 }
 
 // Stop/resume messages, and delete personal data on the customer's request.
+function LimitEditor({ c, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(c.own_credit_limit_paise != null ? String(c.own_credit_limit_paise / 100) : "");
+  const [error, setError] = useState("");
+  const own = c.own_credit_limit_paise != null;
+
+  async function save(e) {
+    e.preventDefault();
+    setError("");
+    try {
+      onChange(await api.updateCustomer(c.id, { credit_limit: value || "0" }));
+      setEditing(false);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (!editing)
+    return (
+      <p className="small muted">
+        {c.credit_limit_paise != null
+          ? t(own ? "Credit limit: {limit}" : "Credit limit: {limit} (shop default)", { limit: rupees(c.credit_limit_paise) })
+          : t("No credit limit")}{" "}
+        <button className="btn-text" onClick={() => setEditing(true)}>
+          {t("Change")}
+        </button>
+      </p>
+    );
+  return (
+    <form className="pay-inline" onSubmit={save}>
+      <input className="input" inputMode="decimal" placeholder={t("Limit ₹ (empty = shop default)")} value={value} onChange={(e) => setValue(e.target.value)} />
+      <button className="btn">{t("Save")}</button>
+      <button type="button" className="btn-text" onClick={() => setEditing(false)}>
+        {t("Back")}
+      </button>
+      {error && <span className="notice error">{error}</span>}
+    </form>
+  );
+}
+
 function CustomerControls({ c, onChange }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
@@ -297,6 +337,7 @@ function CustomerControls({ c, onChange }) {
 
   return (
     <div className="controls">
+      <LimitEditor c={c} onChange={onChange} />
       <div className="controls-row">
         {c.opted_out ? (
           <button className="btn" onClick={() => act(() => api.optIn(c.id))}>

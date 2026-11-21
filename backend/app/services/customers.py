@@ -41,3 +41,8 @@ def list_customers(db: Session, shop: Shop, q: str | None = None, limit: int = 2
     # Biggest balance first: that's who the shopkeeper cares about.
     stmt = stmt.order_by(func.coalesce(func.sum(Due.balance_paise), 0).desc(), Customer.name).limit(limit)
     return [CustomerRow(c, int(bal), int(n), oldest) for c, bal, n, oldest in db.execute(stmt).all()]
+
+
+def effective_limit(shop: Shop, c: Customer) -> int | None:
+    """The customer's own limit if set, else the shop's default (None = no limit)."""
+    return c.credit_limit_paise if c.credit_limit_paise is not None else shop.default_credit_limit_paise

@@ -70,6 +70,22 @@ const HI = {
   "Open call list": "कॉल लिस्ट खोलें",
   Customer: "ग्राहक",
 
+  "This takes them over their credit limit of {limit} (they would owe {total}). You can still save it.":
+    "इससे उनकी उधार सीमा {limit} पार हो जाएगी (कुल बाकी {total})। फिर भी सेव कर सकते हैं।",
+  "Credit limit: {limit}": "उधार सीमा: {limit}",
+  "Credit limit: {limit} (shop default)": "उधार सीमा: {limit} (दुकान की सामान्य)",
+  "No credit limit": "कोई उधार सीमा नहीं",
+  Change: "बदलें",
+  Save: "सेव करें",
+  "Limit ₹ (empty = shop default)": "सीमा ₹ (खाली = दुकान की सामान्य)",
+  "Credit limit": "उधार सीमा",
+  "A warning when a sale would take a customer over this amount. It never blocks the sale.":
+    "जब कोई बिक्री ग्राहक को इस रकम से ऊपर ले जाए, तो चेतावनी। बिक्री कभी नहीं रुकती।",
+  "Default limit for every customer, ₹ (empty = no limit)": "हर ग्राहक के लिए सामान्य सीमा, ₹ (खाली = कोई सीमा नहीं)",
+  "You can set a different limit for one customer on their page.": "किसी एक ग्राहक की अलग सीमा उनके पेज पर रख सकते हैं।",
+  "Suggest a part payment in reminders": "याद-संदेश में थोड़ा भुगतान सुझाएँ",
+  "Extra reminder on the 1st of the month": "महीने की 1 तारीख को एक और याद-संदेश",
+
   // Calls
   "Customers whose dues are old enough that a call works better than another message.":
     "जिनका उधार इतना पुराना है कि अब मैसेज से बेहतर कॉल करना है।",
