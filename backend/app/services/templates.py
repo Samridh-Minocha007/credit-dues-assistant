@@ -133,3 +133,9 @@ def promise_ack(*, shop: str, when: date, lang: str = "en") -> str:
     if _lang(lang) == "hi":
         return f"धन्यवाद! {shop} ने नोट कर लिया है कि आप {format_day(when, 'hi')} तक भुगतान करेंगे। तब तक कोई याद-संदेश नहीं भेजेंगे।"
     return f"Thank you! {shop} has noted that you'll pay by {format_day(when)}. We won't send reminders until then."
+
+
+def statement_message(*, name: str | None, shop: str, total: str, link: str, lang: str = "en") -> str:
+    if _lang(lang) == "hi":
+        return f"नमस्ते {_who(name, 'hi')}, {shop} में आपका पूरा हिसाब यहाँ देखें: {link} कुल बाकी: ₹{total}।"
+    return f"Namaste {_who(name, 'en')}, here is your full account with {shop}: {link} Total pending: Rs {total}."

@@ -144,9 +144,24 @@ function CustomerDetail({ id, onBack }) {
       {note && <div className="notice ok" style={{ marginBottom: 12 }}>{note}</div>}
 
       {c.pay_link && (
-        <a className="btn" href={c.pay_link.replace("/pay/", "/phone/")} target="_blank" rel="noreferrer" style={{ textDecoration: "none", marginBottom: 8 }}>
-          <IconPhone /> Open {c.name ? `${c.name.split(" ")[0]}’s` : "the customer’s"} phone (demo)
-        </a>
+        <div className="controls-row" style={{ marginBottom: 8 }}>
+          <a className="btn" href={c.pay_link.replace("/pay/", "/phone/")} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+            <IconPhone /> Open {c.name ? `${c.name.split(" ")[0]}’s` : "the customer’s"} phone (demo)
+          </a>
+          <a className="btn" href={c.pay_link.replace("/pay/", "/statement/")} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+            {t("View statement")}
+          </a>
+          <button
+            className="btn-text"
+            onClick={async () => {
+              await api.sendStatement(c.id);
+              setNote(t("Statement link sent (simulated)."));
+              load();
+            }}
+          >
+            {t("Send statement to customer")}
+          </button>
+        </div>
       )}
 
       {!c.deleted && <CustomerControls c={c} onChange={setC} />}

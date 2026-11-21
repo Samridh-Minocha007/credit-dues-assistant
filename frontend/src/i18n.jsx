@@ -95,6 +95,10 @@ const HI = {
   "Which one?": "कौन से?",
   "Couldn’t hear that. Try again, or type it.": "सुनाई नहीं दिया। फिर कोशिश करें, या टाइप करें।",
 
+  "View statement": "हिसाब देखें",
+  "Send statement to customer": "ग्राहक को हिसाब भेजें",
+  "Statement link sent (simulated).": "हिसाब का लिंक भेज दिया (सिम्युलेटेड)।",
+
   // Calls
   "Customers whose dues are old enough that a call works better than another message.":
     "जिनका उधार इतना पुराना है कि अब मैसेज से बेहतर कॉल करना है।",

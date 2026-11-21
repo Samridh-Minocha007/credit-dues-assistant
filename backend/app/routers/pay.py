@@ -14,7 +14,9 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Customer
-from ..schemas import PayPageOut
+from .. import clock
+from ..schemas import PayPageOut, StatementLineOut, StatementOut
+from ..services.statement import statement_lines
 from ..services.payments import customer_balance
 from ..services.shop import get_or_create_shop
 from ..services.upi import payment_note, upi_link
@@ -44,4 +46,18 @@ def pay_page(token: str, db: Session = Depends(get_db)):
         # Many people's UPI ID is their phone number @ their bank app's handle.
         demo_payer_vpa=f"{c.phone}@ybl",
         demo_payer_name=(c.name or "Customer").upper(),
+    )
+
+
+@router.get("/{token}/statement", response_model=StatementOut)
+def statement(token: str, db: Session = Depends(get_db)):
+    """The customer's statement, opened from the link in their message."""
+    c = by_token(db, token)
+    shop = get_or_create_shop(db)
+    return StatementOut(
+        shop_name=shop.name,
+        customer_name=c.name,
+        generated_at=clock.now(),
+        balance_paise=customer_balance(c),
+        lines=[StatementLineOut(**l.__dict__) for l in statement_lines(c)],
     )

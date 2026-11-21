@@ -351,3 +351,19 @@ class VoiceOut(BaseModel):
     name: str | None
     customer_id: int | None
     candidates: list[dict]
+
+
+class StatementLineOut(BaseModel):
+    at: datetime
+    kind: str
+    text: str
+    amount_paise: int
+    balance_paise: int
+
+
+class StatementOut(BaseModel):
+    shop_name: str
+    customer_name: str | None
+    generated_at: datetime
+    balance_paise: int
+    lines: list[StatementLineOut]

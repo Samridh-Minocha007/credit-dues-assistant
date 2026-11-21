@@ -17,7 +17,7 @@ from ..schemas import (
 )
 from ..services.collections import collection_info
 from ..services.customers import CustomerRow, effective_limit, list_customers
-from ..services.messaging import pay_link
+from ..services.messaging import pay_link, queue_message, statement_link
 from ..services.money import to_paise
 from ..services.payments import PaymentError, record_payment
 from ..services.privacy import PrivacyError, delete_customer_data, opt_in, opt_out
@@ -143,3 +143,23 @@ def update_customer(customer_id: int, body: CustomerUpdate, db: Session = Depend
         c.credit_limit_paise = limit or None  # 0 removes the customer's own limit
     db.commit()
     return get_customer(customer_id, db)
+
+
+
+@router.post("/{customer_id}/send-statement", response_model=MessageOut, status_code=201)
+def send_statement(customer_id: int, db: Session = Depends(get_db)):
+    """Send the customer a link to their statement (simulated message)."""
+    from ..services import templates
+    from ..services.money import format_rupees
+    from ..services.payments import customer_balance
+
+    c = _get(db, customer_id)
+    if c.deleted_at is not None or not c.pay_token:
+        raise HTTPException(422, "This customer's data was deleted")
+    shop = get_or_create_shop(db)
+    body = templates.statement_message(
+        name=c.name, shop=shop.name, total=format_rupees(customer_balance(c)), link=statement_link(c), lang=shop.message_language
+    )
+    msg = queue_message(db, shop, c, "statement", body)
+    db.commit()
+    return MessageOut.model_validate(msg)

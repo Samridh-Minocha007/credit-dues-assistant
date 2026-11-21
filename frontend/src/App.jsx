@@ -9,6 +9,7 @@ import Settings from "./pages/Settings.jsx";
 import CallsPage from "./pages/Calls.jsx";
 import Results from "./pages/Results.jsx";
 import CustomerPhone from "./pages/CustomerPhone.jsx";
+import Statement from "./pages/Statement.jsx";
 
 // Four places for daily work, plus settings (used once, so it sits apart).
 const PLACES = [
@@ -22,7 +23,9 @@ export default function App() {
   // Customer-facing demo pages, separate from the shopkeeper's app:
   //   /pay/<token>    the link inside the message: opens the (simulated) UPI app
   //   /phone/<token>  the customer's (simulated) phone with their chat
-  const m = window.location.pathname.match(/^\/(pay|phone)\/([\w-]+)/);
+  //   /statement/<token>  the customer's statement (printable)
+  const m = window.location.pathname.match(/^\/(pay|phone|statement)\/([\w-]+)/);
+  if (m && m[1] === "statement") return <Statement token={m[2]} />;
   if (m) return <CustomerPhone token={m[2]} startOnPay={m[1] === "pay"} />;
   return <ShopApp />;
 }

@@ -16,6 +16,10 @@ def pay_link(customer: Customer) -> str:
     return f"{settings.public_base_url}/pay/{customer.pay_token}"
 
 
+def statement_link(customer: Customer) -> str:
+    return f"{settings.public_base_url}/statement/{customer.pay_token}"
+
+
 def queue_message(
     db: Session, shop: Shop, customer: Customer, kind: str, body: str, *, at=None, force: bool = False
 ) -> Message:

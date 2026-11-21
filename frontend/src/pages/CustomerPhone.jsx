@@ -122,7 +122,16 @@ function Bubble({ m, onPay }) {
   return (
     <div className={`bubble-in ${held ? "held" : ""}`}>
       <span>{before}</span>
-      {link && (
+      {link && link.includes("/statement/") && (
+        <a className="pay-card" href={link} target="_blank" rel="noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
+          <span>
+            <strong>Your account statement</strong>
+            <span>Every bill and payment</span>
+          </span>
+          <span className="go">View</span>
+        </a>
+      )}
+      {link && !link.includes("/statement/") && (
         <button className="pay-card" onClick={onPay}>
           <span>
             <strong>Pay on UPI</strong>
