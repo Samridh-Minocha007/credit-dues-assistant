@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MESSAGE_KIND, api, initial, longWhen, messageStatus, replyReading, rupees, setClockOffset, shortWhen } from "../api/client.js";
 import { ReadingNote } from "./Customers.jsx";
 import { IconRefresh } from "../icons.jsx";
+import { t } from "../i18n.jsx";
 
 // Everything that went out to customers or came in from them, grouped by
 // customer so one person's story reads together. The customer with the most
@@ -53,8 +54,8 @@ export default function Activity() {
     <>
       <div className="page-head" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
-          <h1>Activity</h1>
-          <p>Messages and UPI payments, grouped by customer. All simulated.</p>
+          <h1>{t("Activity")}</h1>
+          <p>{t("Messages and UPI payments, grouped by customer. All simulated.")}</p>
         </div>
         <button className="icon-btn" style={{ marginLeft: 0, flexShrink: 0 }} onClick={load} aria-label="Refresh">
           <IconRefresh />
@@ -72,7 +73,7 @@ export default function Activity() {
       </div>
 
       {groups === null ? (
-        <p className="empty">Loading…</p>
+        <p className="empty">{t("Loading…")}</p>
       ) : groups.length === 0 ? (
         <p className="empty">Nothing here yet. Add credit on the Today screen and the customer’s payment message will show up here.</p>
       ) : (
@@ -95,7 +96,7 @@ function groupByCustomer({ messages, payments, customers }, filter) {
       const c = byId.get(key);
       groups.set(key, {
         key,
-        name: key === UNLINKED ? "Not linked to a customer" : c?.name || (c?.deleted ? "Deleted customer" : c?.phone || fallbackName),
+        name: key === UNLINKED ? t("Not linked to a customer") : c?.name || (c?.deleted ? "Deleted customer" : c?.phone || fallbackName),
         phone: key === UNLINKED ? null : c?.deleted ? (c.name ? "data deleted" : null) : c?.name ? c.phone : null,
         unlinked: key === UNLINKED,
         events: [],
@@ -251,19 +252,19 @@ function DemoClock({ onJump }) {
   return (
     <div className="demo-clock">
       <div className="now">
-        <span className="muted">Demo time{clock.offset_seconds > 0 ? " (moved ahead)" : ""}</span>
+        <span className="muted">{t("Demo time")}{clock.offset_seconds > 0 ? " (moved ahead)" : ""}</span>
         <strong>{longWhen(clock.now)}</strong>
         {result && <span className="small muted">{result}</span>}
       </div>
       <button className="btn" disabled={busy} onClick={() => jump(1)}>
-        +1 day
+        {t("+1 day")}
       </button>
       <button className="btn" disabled={busy} onClick={() => jump(7)}>
-        +1 week
+        {t("+1 week")}
       </button>
       {clock.offset_seconds > 0 && (
         <button className="btn-text" disabled={busy} onClick={reset}>
-          Back to real time
+          {t("Back to real time")}
         </button>
       )}
     </div>

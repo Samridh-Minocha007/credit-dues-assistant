@@ -64,7 +64,8 @@ def record_payment(db: Session, shop: Shop, customer: Customer, amount_paise: in
         customer,
         "payment_receipt",
         templates.payment_receipt(
-            name=customer.name, shop=shop.name, paid=format_rupees(amount_paise), remaining=format_rupees(remaining)
+            name=customer.name, shop=shop.name, paid=format_rupees(amount_paise), remaining=format_rupees(remaining),
+            lang=shop.message_language,
         ),
     )
     db.commit()

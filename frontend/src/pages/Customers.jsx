@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MESSAGE_KIND, api, daysAgo, initial, messageStatus, replyReading, rupees, shortWhen } from "../api/client.js";
 import { IconBack, IconPhone } from "../icons.jsx";
+import { t } from "../i18n.jsx";
 
 // After a delete the phone number is gone (replaced by a placeholder), so
 // never show it as a name.
@@ -25,20 +26,20 @@ function CustomerList({ onOpen }) {
   return (
     <>
       <div className="page-head">
-        <h1>Customers</h1>
-        <p>Biggest balance first.</p>
+        <h1>{t("Customers")}</h1>
+        <p>{t("Biggest balance first.")}</p>
       </div>
       <input
         className="input"
         type="search"
-        placeholder="Search by name or phone"
+        placeholder={t("Search by name or phone")}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         style={{ marginBottom: 16 }}
         aria-label="Search customers"
       />
       {rows === null ? (
-        <p className="empty">Loading…</p>
+        <p className="empty">{t("Loading…")}</p>
       ) : rows.length === 0 ? (
         <p className="empty">{q ? `No customer matches “${q}”.` : "No customers yet. Add credit on the Today screen to create one."}</p>
       ) : (
@@ -60,7 +61,7 @@ function CustomerList({ onOpen }) {
                   </span>
                 </span>
                 <span className="row-end">
-                  {r.balance_paise > 0 ? <span className="money due">{rupees(r.balance_paise)}</span> : <span className="hint">Settled</span>}
+                  {r.balance_paise > 0 ? <span className="money due">{rupees(r.balance_paise)}</span> : <span className="hint">{t("Settled")}</span>}
                 </span>
               </button>
             </li>
@@ -83,7 +84,7 @@ function CustomerDetail({ id, onBack }) {
     load();
   }, [id]);
 
-  if (!c) return <p className="empty">Loading…</p>;
+  if (!c) return <p className="empty">{t("Loading…")}</p>;
 
   async function recordCash(e) {
     e.preventDefault();
@@ -111,7 +112,7 @@ function CustomerDetail({ id, onBack }) {
   return (
     <>
       <button className="btn-text back" onClick={onBack}>
-        <IconBack /> All customers
+        <IconBack /> {t("All customers")}
       </button>
       <div className="page-head" style={{ marginBottom: 0 }}>
         <h1>{displayName(c)}</h1>
@@ -127,14 +128,14 @@ function CustomerDetail({ id, onBack }) {
 
       <div className="balance-block">
         <div>
-          <div className="muted small">Owes you</div>
+          <div className="muted small">{t("Owes you")}</div>
           <div className={`money ${c.balance_paise ? "due" : "paid"}`}>{rupees(c.balance_paise)}</div>
         </div>
         {c.balance_paise > 0 && !c.deleted && (
           <form className="pay-inline" onSubmit={recordCash}>
-            <input className="input" inputMode="decimal" placeholder="Amount ₹" value={cash} onChange={(e) => setCash(e.target.value)} aria-label="Amount paid at the counter" />
+            <input className="input" inputMode="decimal" placeholder={t("Amount ₹")} value={cash} onChange={(e) => setCash(e.target.value)} aria-label="Amount paid at the counter" />
             <button className="btn btn-primary" disabled={!cash}>
-              Record payment
+              {t("Record payment")}
             </button>
           </form>
         )}
@@ -152,7 +153,7 @@ function CustomerDetail({ id, onBack }) {
 
       <section className="section" aria-labelledby="hist-h">
         <div className="section-head">
-          <h2 id="hist-h">History</h2>
+          <h2 id="hist-h">{t("History")}</h2>
         </div>
         <ul className="timeline">
           {history.map((h, i) => (
@@ -299,11 +300,11 @@ function CustomerControls({ c, onChange }) {
       <div className="controls-row">
         {c.opted_out ? (
           <button className="btn" onClick={() => act(() => api.optIn(c.id))}>
-            Resume messages
+            {t("Resume messages")}
           </button>
         ) : (
           <button className="btn" onClick={() => act(() => api.optOut(c.id))}>
-            Stop messages
+            {t("Stop messages")}
           </button>
         )}
         {!confirming && (

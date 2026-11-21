@@ -15,10 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
 
-DEFAULT_TEMPLATE = (
-    "Namaste {name}, a friendly note from {shop}. "
-    "Your pending balance is Rs {amount}. You can pay here: {link}. Thank you!"
-)
+from .services.templates import DEFAULT_TEMPLATE  # noqa: E402
 
 
 class Shop(Base):
@@ -54,6 +51,8 @@ class Shop(Base):
     # The shop's existing UPI ID (the one behind its QR code), e.g. sharmastore@okaxis.
     # Customers pay straight to it; we never hold money.
     upi_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Language of every message sent to customers: "en" or "hi" (Hindi).
+    message_language: Mapped[str] = mapped_column(String(2), default="en")
 
     # When the reminder timer last ran. Each run handles every weekly slot
     # since then, so nothing is missed if the server was off for a while

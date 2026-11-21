@@ -33,6 +33,7 @@ class SettingsOut(BaseModel):
     max_reminders_per_month: int
     reply_parsing_enabled: bool
     upi_id: str | None
+    message_language: str = "en"
     # Extra fields computed by the router, not stored:
     reply_reader: str = "rules"  # gemini (API key set) | rules
     demo_mode: bool = False  # running on the generated demo database
@@ -55,6 +56,7 @@ class SettingsUpdate(BaseModel):
     max_reminders_per_month: int | None = Field(default=None, ge=1, le=8)
     reply_parsing_enabled: bool | None = None
     upi_id: str | None = Field(default=None, max_length=100)
+    message_language: str | None = Field(default=None, pattern="^(en|hi)$")
 
     @field_validator("upi_id")
     @classmethod

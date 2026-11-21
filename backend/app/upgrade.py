@@ -25,6 +25,7 @@ ADDED_COLUMNS = [
     ("promises", "confidence", "FLOAT"),  # slice 5
     ("messages", "parsed", "VARCHAR(300)"),  # slice 5
     ("dues", "variant", "VARCHAR(12)"),  # slice 6
+    ("shops", "message_language", "VARCHAR(2) NOT NULL DEFAULT 'en'"),  # Hindi messages
 ]
 
 

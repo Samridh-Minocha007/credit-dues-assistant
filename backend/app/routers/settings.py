@@ -13,12 +13,12 @@ from ..models import Shop
 from ..schemas import SettingsOut, SettingsUpdate
 from ..services.money import to_paise
 from ..services.shop import get_or_create_shop
-from ..services.templates import InvalidTemplate, render, validate_template
+from ..services.templates import DEFAULT_TEMPLATES, InvalidTemplate, render, validate_template
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 # Changing any of these means the shopkeeper must approve again.
-NEEDS_REAPPROVAL = {"message_template", "reminder_day", "reminder_time"}
+NEEDS_REAPPROVAL = {"message_template", "reminder_day", "reminder_time", "message_language"}
 
 
 def _out(shop: Shop) -> SettingsOut:
@@ -27,7 +27,8 @@ def _out(shop: Shop) -> SettingsOut:
     out.reply_reader = "gemini" if app_settings.gemini_api_key else "rules"
     out.demo_mode = app_settings.demo_mode
     out.preview = render(
-        shop.message_template, name="Ramesh", shop=shop.name, amount="840", link="https://pay.example/abc123"
+        shop.message_template, name="Ramesh", shop=shop.name, amount="840", link="https://pay.example/abc123",
+        lang=shop.message_language,
     )
     return out
 
@@ -47,6 +48,12 @@ def update_settings(body: SettingsUpdate, db: Session = Depends(get_db)):
             validate_template(changes["message_template"])
         except InvalidTemplate as e:
             raise HTTPException(422, str(e))
+    # Switching language while still on the standard wording: switch the
+    # wording too. A custom wording is left alone (the shopkeeper wrote it).
+    new_lang = changes.get("message_language")
+    if new_lang and new_lang != shop.message_language and "message_template" not in changes:
+        if shop.message_template == DEFAULT_TEMPLATES.get(shop.message_language):
+            changes["message_template"] = DEFAULT_TEMPLATES[new_lang]
     if "escalation_amount" in changes:
         changes["escalation_amount_paise"] = to_paise(changes.pop("escalation_amount"))
 

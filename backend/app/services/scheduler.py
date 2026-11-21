@@ -126,6 +126,7 @@ def send_weekly(db: Session, shop: Shop, slot: datetime, summary: RunSummary) ->
             shop=shop.name,
             amount=format_rupees(balance),
             link=pay_link(c) if shop.upi_id else "(please pay at the shop)",
+            lang=shop.message_language,
         )
         if _reminders_in_window(db, c, slot) >= shop.max_reminders_per_month:
             db.add(Message(customer=c, direction="out", kind="weekly_reminder", body=body, status="blocked_cap", created_at=slot))
@@ -151,6 +152,7 @@ def process_promises(db: Session, shop: Shop, upto: datetime, summary: RunSummar
             body = templates.promise_followup(
                 name=c.name, shop=shop.name, amount=format_rupees(balance),
                 link=pay_link(c) if shop.upi_id else "(please pay at the shop)",
+                lang=shop.message_language,
             )
             queue_message(db, shop, c, "promise_followup", body, at=followup_at)  # opt-out and quiet hours still apply
             p.followup_sent_at = followup_at

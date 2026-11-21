@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { SERVER_EVENT, api, setClockOffset } from "./api/client.js";
+import { t } from "./i18n.jsx";
 import { IconActivity, IconCall, IconCustomers, IconResults, IconSettings, IconToday } from "./icons.jsx";
 import Today from "./pages/Today.jsx";
 import Customers from "./pages/Customers.jsx";
@@ -27,7 +28,13 @@ export default function App() {
 }
 
 function ShopApp() {
-  const [view, setView] = useState("today");
+  // Remembered for this browser tab, so switching language (which re-mounts
+  // the app) keeps you on the same screen.
+  const [view, setViewState] = useState(() => sessionStorage.getItem("view") || "today");
+  const setView = (v) => {
+    sessionStorage.setItem("view", v);
+    setViewState(v);
+  };
   // Tapping the tab you're already on starts that screen fresh (e.g. back to
   // the customer list from a customer's page), like most phone apps.
   const [visit, setVisit] = useState(0);
@@ -64,7 +71,7 @@ function ShopApp() {
   const tabs = PLACES.map(({ key, label, Icon }) => (
     <button key={key} className="tab" aria-current={view === key ? "page" : undefined} onClick={() => go(key)}>
       <Icon />
-      {label}
+      {t(label)}
       {key === "today" && toCheck > 0 && (
         <span className="dot" aria-label={`${toCheck} payments to check`}>
           {toCheck}
@@ -79,8 +86,8 @@ function ShopApp() {
   ));
   const brand = (
     <div className="brand">
-      <strong>{shop?.name || "Your shop"}</strong>
-      <span>{shop?.demo_mode ? "Demo shop with generated data" : "Concept prototype, all simulated"}</span>
+      <strong>{shop?.name || t("Your shop")}</strong>
+      <span>{shop?.demo_mode ? t("Demo shop with generated data") : t("Concept prototype, all simulated")}</span>
     </div>
   );
 
@@ -95,11 +102,11 @@ function ShopApp() {
         {/* Results and Settings are for the owner, not daily work, so they sit apart at the bottom. */}
         <button className="tab settings-link" aria-current={view === "results" ? "page" : undefined} onClick={() => go("results")}>
           <IconResults />
-          Results
+          {t("Results")}
         </button>
         <button className="tab" aria-current={view === "settings" ? "page" : undefined} onClick={() => go("settings")}>
           <IconSettings />
-          Settings
+          {t("Settings")}
         </button>
       </aside>
 
@@ -129,7 +136,7 @@ function ShopApp() {
         <main className="content" key={`${view}-${visit}`}>
           {!serverUp && (
             <div className="server-down" role="alert">
-              <strong>Can’t reach the app server.</strong> The backend isn’t running, so nothing can load. Start it from the{" "}
+              <strong>{t("Can’t reach the app server.")}</strong> The backend isn’t running, so nothing can load. Start it from the{" "}
               <code>backend</code> folder with <code>.venv/Scripts/python -m uvicorn app.main:app</code>, then{" "}
               <button className="btn-text" onClick={() => window.location.reload()}>
                 reload this page

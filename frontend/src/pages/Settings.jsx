@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client.js";
 import { IconCheck } from "../icons.jsx";
+import { getLang, setLang, t } from "../i18n.jsx";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -21,6 +22,7 @@ export default function Settings({ onSaved }) {
     setD({
       name: settings.name,
       upi_id: settings.upi_id || "",
+      message_language: settings.message_language || "en",
       reminder_day: settings.reminder_day,
       reminder_time: settings.reminder_time,
       message_template: settings.message_template,
@@ -53,7 +55,7 @@ export default function Settings({ onSaved }) {
     setError("");
     try {
       load(await api.updateSettings(payload()));
-      setStatus("Changes saved.");
+      setStatus(t("Changes saved."));
       onSaved?.();
     } catch (err) {
       setError(err.message);
@@ -78,25 +80,50 @@ export default function Settings({ onSaved }) {
   return (
     <form onSubmit={save}>
       <div className="page-head">
-        <h1>Settings</h1>
-        <p>Set these once. You can change them any time.</p>
+        <h1>{t("Settings")}</h1>
+        <p>{t("Set these once. You can change them any time.")}</p>
       </div>
 
       <section className="settings-group">
-        <h2>Your shop</h2>
+        <h2>{t("Language")}</h2>
+        <div className="field">
+          {t("App language")}
+          <div className="chips" style={{ margin: 0 }} role="group" aria-label={t("App language")}>
+            {[
+              ["en", "English"],
+              ["hi", "हिंदी"],
+            ].map(([code, label]) => (
+              <button key={code} type="button" className="chip" aria-pressed={getLang() === code} onClick={() => setLang(code)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="field">
-          Shop name, as customers see it
+          {t("Language of messages to customers")}
+          <select className="select" value={d.message_language} onChange={set("message_language")} style={{ maxWidth: 260 }}>
+            <option value="en">English</option>
+            <option value="hi">हिंदी (Hindi)</option>
+          </select>
+        </label>
+        <p className="hint">{t("Changing the message language switches the standard reminder wording and needs approval again.")}</p>
+      </section>
+
+      <section className="settings-group">
+        <h2>{t("Your shop")}</h2>
+        <label className="field">
+          {t("Shop name, as customers see it")}
           <input className="input" value={d.name} onChange={set("name")} />
         </label>
         <label className="field">
-          Shop’s UPI ID, the one behind your QR code
+          {t("Shop’s UPI ID, the one behind your QR code")}
           <input className="input" value={d.upi_id} onChange={set("upi_id")} placeholder="sharmastore@okaxis" autoCapitalize="none" spellCheck={false} />
         </label>
         <p className="hint">Customers pay straight to this UPI ID from their message. This app never holds money.</p>
       </section>
 
       <section className="settings-group">
-        <h2>Weekly reminder</h2>
+        <h2>{t("Weekly reminder")}</h2>
         <p>Goes to every customer who owes money, once a week, without asking you each time.</p>
 
         {s.approved ? (
@@ -110,14 +137,14 @@ export default function Settings({ onSaved }) {
               <strong>Not approved yet.</strong> No reminders go out until you approve the message below.
             </p>
             <button type="button" className="btn btn-primary" onClick={approve}>
-              Approve this reminder
+              {t("Approve this reminder")}
             </button>
           </div>
         )}
 
         <div className="grid-2">
           <label className="field">
-            Day
+            {t("Day")}
             <select className="select" value={d.reminder_day} onChange={set("reminder_day")}>
               {DAYS.map((day, i) => (
                 <option key={day} value={i}>
@@ -127,25 +154,25 @@ export default function Settings({ onSaved }) {
             </select>
           </label>
           <label className="field">
-            Time
+            {t("Time")}
             <input className="input" type="time" value={d.reminder_time} onChange={set("reminder_time")} />
           </label>
         </div>
         <label className="field">
-          Message
+          {t("Message")}
           <textarea className="textarea" rows={4} value={d.message_template} onChange={set("message_template")} />
         </label>
         <p className="hint">
           Keep {"{amount}"} and {"{link}"} in the message. You can also use {"{name}"} and {"{shop}"}.
         </p>
         <div className="field">
-          How the customer sees it
+          {t("How the customer sees it")}
           <div className="preview-bubble">{s.preview}</div>
         </div>
       </section>
 
       <section className="settings-group">
-        <h2>When to suggest a call</h2>
+        <h2>{t("When to suggest a call")}</h2>
         <p>Automatic reminders stop and the customer appears on your call list.</p>
         <label className="field">
           When their oldest bill is this many days old
@@ -164,7 +191,7 @@ export default function Settings({ onSaved }) {
       </section>
 
       <section className="settings-group">
-        <h2>Being polite</h2>
+        <h2>{t("Being polite")}</h2>
         <div className="grid-2">
           <label className="field">
             No messages after
@@ -182,7 +209,7 @@ export default function Settings({ onSaved }) {
       </section>
 
       <section className="settings-group">
-        <h2>Experiment</h2>
+        <h2>{t("Experiment")}</h2>
         <label className="toggle">
           <input type="checkbox" checked={d.reply_parsing_enabled} onChange={set("reply_parsing_enabled")} />
           <span>
@@ -201,7 +228,7 @@ export default function Settings({ onSaved }) {
       </section>
 
       <div className="save-bar">
-        <button className="btn btn-primary">Save changes</button>
+        <button className="btn btn-primary">{t("Save changes")}</button>
         {status && <span className="muted small">{status}</span>}
         {error && <span className="notice error" style={{ flex: 1 }}>{error}</span>}
       </div>

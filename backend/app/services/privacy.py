@@ -53,10 +53,10 @@ def handle_reply(db: Session, shop: Shop, customer: Customer, text: str) -> Mess
         opt_out(db, customer)
         # A confirmation is the one message we send after an opt-out, as a
         # direct answer to theirs (hence force=True).
-        queue_message(db, shop, customer, "opt_out_confirm", templates.opt_out_confirm(shop=shop.name), force=True)
+        queue_message(db, shop, customer, "opt_out_confirm", templates.opt_out_confirm(shop=shop.name, lang=shop.message_language), force=True)
     elif word in START_WORDS and customer.opted_out_at is not None:
         opt_in(db, customer)
-        queue_message(db, shop, customer, "opt_in_confirm", templates.opt_in_confirm(shop=shop.name), force=True)
+        queue_message(db, shop, customer, "opt_in_confirm", templates.opt_in_confirm(shop=shop.name, lang=shop.message_language), force=True)
     elif word not in STOP_WORDS | START_WORDS and shop.reply_parsing_enabled and customer_balance(customer) > 0:
         read_promise(db, shop, customer, inbound, now)
     db.commit()
@@ -87,8 +87,8 @@ def read_promise(db: Session, shop: Shop, customer: Customer, inbound: Message, 
         customer.collection_status = "normal"  # they've agreed to pay
     if customer.opted_out_at is None:
         # A direct answer to their message, so it goes out now, even at night.
-        when = parsed.promised_date.strftime("%A %d %B")
-        queue_message(db, shop, customer, "promise_ack", templates.promise_ack(shop=shop.name, when=when), force=True)
+        ack = templates.promise_ack(shop=shop.name, when=parsed.promised_date, lang=shop.message_language)
+        queue_message(db, shop, customer, "promise_ack", ack, force=True)
     return promise
 
 

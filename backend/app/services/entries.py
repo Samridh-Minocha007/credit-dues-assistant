@@ -109,6 +109,7 @@ def record_entry(
             credit=format_rupees(due.balance_paise),
             total=format_rupees(total),
             link=pay_link(customer) if shop.upi_id else None,
+            lang=shop.message_language,
         ),
     )
     db.commit()

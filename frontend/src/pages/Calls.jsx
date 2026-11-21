@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
 import { api, appNow, rupees, shortWhen } from "../api/client.js";
 import { IconCall } from "../icons.jsx";
+import { t } from "../i18n.jsx";
+
+// The server writes reasons in English ("Oldest bill is 34 days old");
+// translate the known patterns for the Hindi screen.
+function reasonText(reason) {
+  let m = reason.match(/^Oldest bill is (\d+) days old/);
+  let out = m ? t("Oldest bill is {n} days old", { n: m[1] }) : null;
+  if (!out && (m = reason.match(/^Owes Rs ([\d,.]+), oldest bill (\d+) days old/)))
+    out = t("Owes {amount}, oldest bill {n} days old", { amount: `₹${m[1]}`, n: m[2] });
+  if (!out) return reason;
+  const broken = reason.match(/Promised (\d+ \w+), didn't pay/);
+  return broken ? `${out}. ${t("Promised {date}, didn't pay", { date: broken[1] })}` : out;
+}
 
 // Step 4-5 of the core loop, on its own Calls screen (kept apart from
 // payments on Today so calls never get lost among other things):
@@ -22,10 +35,10 @@ export default function CallsPage({ onChange }) {
   return (
     <>
       <div className="page-head">
-        <h1>Calls</h1>
-        <p>Customers whose dues are old enough that a call works better than another message.</p>
+        <h1>{t("Calls")}</h1>
+        <p>{t("Customers whose dues are old enough that a call works better than another message.")}</p>
       </div>
-      {list === null ? <p className="empty">Loading…</p> : <CallSection list={list} onDone={done} />}
+      {list === null ? <p className="empty">{t("Loading…")}</p> : <CallSection list={list} onDone={done} />}
     </>
   );
 }
@@ -36,13 +49,12 @@ function CallSection({ list, onDone }) {
     <>
       <section aria-labelledby="call-h">
         <div className="section-head">
-          <h2 id="call-h">To call</h2>
-          {to_call.length > 0 && <span className="muted small">{to_call.length} waiting</span>}
+          <h2 id="call-h">{t("To call")}</h2>
+          {to_call.length > 0 && <span className="muted small">{t("{n} waiting", { n: to_call.length })}</span>}
         </div>
         {to_call.length === 0 ? (
           <p className="empty">
-            No one to call right now. Customers appear here when their oldest bill passes the limit in Settings (30 days by
-            default), and their automatic reminders stop.
+            {t("No one to call right now. Customers appear here when their oldest bill passes the limit in Settings (30 days by default), and their automatic reminders stop.")}
           </p>
         ) : (
           to_call.map((c) => <CallCard key={c.customer_id} c={c} onDone={onDone} />)
@@ -52,7 +64,7 @@ function CallSection({ list, onDone }) {
       {promised.length > 0 && (
         <section className="section" aria-labelledby="promised-h">
           <div className="section-head">
-            <h2 id="promised-h">Promised to pay</h2>
+            <h2 id="promised-h">{t("Promised to pay")}</h2>
           </div>
           <ul className="rows">
             {promised.map((c) => (
@@ -63,7 +75,7 @@ function CallSection({ list, onDone }) {
                       {c.name || c.phone}
                     </span>
                     <span className="row-sub">
-                      By {formatDate(c.latest_promise.promised_date)}. Reminders are paused until then.
+                      {t("By {date}. Reminders are paused until then.", { date: formatDate(c.latest_promise.promised_date) })}
                     </span>
                   </span>
                   <span className="money due">{rupees(c.balance_paise)}</span>
@@ -77,10 +89,10 @@ function CallSection({ list, onDone }) {
       {disputed.length > 0 && (
         <section className="section" aria-labelledby="disputed-h">
           <div className="section-head">
-            <h2 id="disputed-h">Disputed</h2>
+            <h2 id="disputed-h">{t("Disputed")}</h2>
           </div>
           <p className="muted small" style={{ marginBottom: 8 }}>
-            No messages go to these customers until you sort it out.
+            {t("No messages go to these customers until you sort it out.")}
           </p>
           <ul className="rows">
             {disputed.map((c) => (
@@ -137,28 +149,28 @@ function CallCard({ c, onDone }) {
         </span>
       </div>
       <p className="small muted">
-        {c.reason}.{c.last_reminder_at ? ` Last reminder ${shortWhen(c.last_reminder_at)}.` : " No reminder sent yet."}
-        {p && p.status === "kept" && ` Kept their promise for ${formatDate(p.promised_date)}.`}
+        {reasonText(c.reason)}. {c.last_reminder_at ? t("Last reminder {when}.", { when: shortWhen(c.last_reminder_at) }) : t("No reminder sent yet.")}
+        {p && p.status === "kept" && ` ${t("Kept their promise for {date}.", { date: formatDate(p.promised_date) })}`}
       </p>
 
       <div className="actions">
         <a className="btn call-btn" href={`tel:+91${c.phone}`}>
-          <IconCall size={18} /> Call {pretty}
+          <IconCall size={18} /> {t("Call {phone}", { phone: pretty })}
         </a>
       </div>
 
       {mode === null && (
         <div className="outcomes">
-          <span className="small muted">After the call:</span>
+          <span className="small muted">{t("After the call:")}</span>
           <div className="actions">
             <button className="btn" onClick={() => setMode("promised")}>
-              Promised a date
+              {t("Promised a date")}
             </button>
             <button className="btn" onClick={() => setMode("disputed")}>
-              Disputed
+              {t("Disputed")}
             </button>
             <button className="btn-text" onClick={() => setMode("written_off")}>
-              Write off
+              {t("Write off")}
             </button>
           </div>
         </div>
@@ -166,7 +178,7 @@ function CallCard({ c, onDone }) {
 
       {mode === "promised" && (
         <div className="outcome-form">
-          <span className="small">When did they say they’ll pay?</span>
+          <span className="small">{t("When did they say they’ll pay?")}</span>
           <div className="chips" style={{ margin: 0 }}>
             {[
               [1, "Tomorrow"],
@@ -174,19 +186,19 @@ function CallCard({ c, onDone }) {
               [7, "In a week"],
             ].map(([n, label]) => (
               <button key={n} type="button" className="chip" aria-pressed={date === isoDaysFromToday(n)} onClick={() => setDate(isoDaysFromToday(n))}>
-                {label}
+                {t(label)}
               </button>
             ))}
-            <input className="input date-input" type="date" value={date} min={isoDaysFromToday(0)} onChange={(e) => setDate(e.target.value)} aria-label="Promised date" />
+            <input className="input date-input" type="date" value={date} min={isoDaysFromToday(0)} onChange={(e) => setDate(e.target.value)} aria-label={t("Promised date")} />
           </div>
-          <input className="input" placeholder="Note (optional), e.g. after salary" value={note} onChange={(e) => setNote(e.target.value)} />
-          <p className="hint">Reminders pause until {date ? formatDate(date) : "then"}. That morning they get one gentle reminder.</p>
+          <input className="input" placeholder={t("Note (optional), e.g. after salary")} value={note} onChange={(e) => setNote(e.target.value)} />
+          <p className="hint">{t("Reminders pause until {date}. That morning they get one gentle reminder.", { date: date ? formatDate(date) : "…" })}</p>
           <div className="actions">
             <button className="btn btn-primary" disabled={saving || !date} onClick={() => save("promised_date")}>
-              Save promise
+              {t("Save promise")}
             </button>
             <button className="btn-text" onClick={() => setMode(null)}>
-              Back
+              {t("Back")}
             </button>
           </div>
         </div>
@@ -194,14 +206,14 @@ function CallCard({ c, onDone }) {
 
       {mode === "disputed" && (
         <div className="outcome-form">
-          <input className="input" placeholder="What do they disagree with? (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-          <p className="hint">All messages to them stop until you mark it resolved.</p>
+          <input className="input" placeholder={t("What do they disagree with? (optional)")} value={note} onChange={(e) => setNote(e.target.value)} />
+          <p className="hint">{t("All messages to them stop until you mark it resolved.")}</p>
           <div className="actions">
             <button className="btn btn-primary" disabled={saving} onClick={() => save("disputed")}>
-              Mark as disputed
+              {t("Mark as disputed")}
             </button>
             <button className="btn-text" onClick={() => setMode(null)}>
-              Back
+              {t("Back")}
             </button>
           </div>
         </div>
@@ -210,15 +222,14 @@ function CallCard({ c, onDone }) {
       {mode === "written_off" && (
         <div className="outcome-form">
           <p className="small">
-            Write off {rupees(c.balance_paise)}? Their bills are closed as unpaid and they won’t get any more reminders. The record
-            stays in their history.
+            {t("Write off {amount}? Their bills are closed as unpaid and they won’t get any more reminders. The record stays in their history.", { amount: rupees(c.balance_paise) })}
           </p>
           <div className="actions">
             <button className="btn btn-danger" disabled={saving} onClick={() => save("written_off")}>
-              Write off {rupees(c.balance_paise)}
+              {t("Write off {amount}", { amount: rupees(c.balance_paise) })}
             </button>
             <button className="btn-text" onClick={() => setMode(null)}>
-              Back
+              {t("Back")}
             </button>
           </div>
         </div>
@@ -248,26 +259,26 @@ function DisputedRow({ c, onDone }) {
           <span className="row-title" style={{ display: "block" }}>
             {c.name || c.phone}
           </span>
-          <span className="row-sub">Oldest bill {c.oldest_age_days} days old</span>
+          <span className="row-sub">{t("Oldest bill {n} days old", { n: c.oldest_age_days })}</span>
         </span>
         <span className="money due">{rupees(c.balance_paise)}</span>
         <div className="actions" style={{ width: "100%", gap: "8px 16px", display: "flex", flexWrap: "wrap" }}>
           {!confirm ? (
             <>
               <button className="btn" onClick={() => act(() => api.resolveDispute(c.customer_id))}>
-                Sorted out, resume
+                {t("Sorted out, resume")}
               </button>
               <button className="btn-text" onClick={() => setConfirm(true)}>
-                Write off
+                {t("Write off")}
               </button>
             </>
           ) : (
             <>
               <button className="btn btn-danger" onClick={() => act(() => api.callOutcome(c.customer_id, { outcome: "written_off" }))}>
-                Write off {rupees(c.balance_paise)}
+                {t("Write off {amount}", { amount: rupees(c.balance_paise) })}
               </button>
               <button className="btn-text" onClick={() => setConfirm(false)}>
-                Back
+                {t("Back")}
               </button>
             </>
           )}
