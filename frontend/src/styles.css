@@ -477,3 +477,7 @@ button.row:hover { background: rgba(31, 42, 68, 0.03); }
 /* ---------- offline entries waiting to sync ---------- */
 .pending-sync { background: var(--haldi-soft); border-left: 4px solid var(--haldi); border-radius: 0 var(--r-md) var(--r-md) 0; padding: 12px 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; font-size: var(--t-sm); }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* ---------- send on WhatsApp (the shopkeeper sends it themselves) ---------- */
+.wa-btn { background: #1f7a4d; border-color: #1f7a4d; color: white; text-decoration: none; min-height: 40px; margin-top: 6px; }
+.wa-btn:hover { background: #17633e; border-color: #17633e; }

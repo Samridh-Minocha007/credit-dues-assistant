@@ -59,6 +59,7 @@ export const api = {
   getCustomer: (id) => request("GET", `/api/customers/${id}`),
   recordCashPayment: (id, amount) => request("POST", `/api/customers/${id}/payments`, { amount }),
   updateCustomer: (id, changes) => request("PATCH", `/api/customers/${id}`, changes),
+  whatsappReminder: (id) => request("POST", `/api/customers/${id}/whatsapp`),
   optOut: (id) => request("POST", `/api/customers/${id}/opt-out`),
   optIn: (id) => request("POST", `/api/customers/${id}/opt-in`),
   deleteCustomer: (id) => request("DELETE", `/api/customers/${id}`),
@@ -101,6 +102,7 @@ export const MESSAGE_KIND = {
   weekly_reminder: "Weekly reminder",
   payday_reminder: "Payday reminder",
   statement: "Statement",
+  manual_reminder: "Reminder sent from WhatsApp",
   promise_followup: "Promise follow-up",
   opt_out_confirm: "Opt-out confirmation",
   opt_in_confirm: "Messages back on",
@@ -113,6 +115,8 @@ export function messageStatus(m) {
   switch (m.status) {
     case "sent_sim":
       return "Sent";
+    case "sent_manual":
+      return "Opened in your WhatsApp";
     case "scheduled":
       return `Waiting for morning, goes at ${timeOf(m.scheduled_for)}`;
     case "blocked_opt_out":
@@ -175,4 +179,10 @@ export function replyReading(m) {
   }
   if (p.intent === "already_paid") return { kind: "paid", text: "Says they already paid. Please check.", by };
   return { kind: "other", text: "Not a clear promise. Nothing done automatically.", by };
+}
+
+// WhatsApp "click to chat": opens WhatsApp with the message written in. The
+// shopkeeper presses send; the app never sends anything by itself.
+export function whatsappUrl(phone, text) {
+  return `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`;
 }

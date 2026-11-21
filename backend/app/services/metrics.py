@@ -37,7 +37,7 @@ from ..models import CallOutcome, Customer, Due, Message, Promise, Shop
 
 WINDOW = timedelta(days=30)
 SMALL_GROUP = 20  # below this many mature bills per arm, warn that differences may be chance
-REMINDER_KINDS = ("weekly_reminder", "payday_reminder", "promise_followup")
+REMINDER_KINDS = ("weekly_reminder", "payday_reminder", "manual_reminder", "promise_followup")
 AGE_BUCKETS = [(0, 7, "0-7 days"), (8, 14, "8-14 days"), (15, 30, "15-30 days"), (31, 60, "31-60 days"), (61, None, "Over 60 days")]
 
 
@@ -88,13 +88,13 @@ def compute(db: Session, shop: Shop) -> dict:
     untracked = sum(1 for d in dues if d.variant is None)
 
     # ---- guardrails ----
-    messaged = {m.customer_id for m in messages if m.direction == "out" and m.status == "sent_sim"}
+    messaged = {m.customer_id for m in messages if m.direction == "out" and m.status in ("sent_sim", "sent_manual")}
     live = [c for c in customers if c.deleted_at is None]
     opted_out = [c for c in live if c.opted_out_at is not None and c.id in messaged]
 
     first_reminder: dict[int, datetime] = {}
     for m in messages:
-        if m.kind in REMINDER_KINDS and m.status == "sent_sim" and m.sent_at:
+        if m.kind in REMINDER_KINDS and m.status in ("sent_sim", "sent_manual") and m.sent_at:
             if m.customer_id not in first_reminder or m.sent_at < first_reminder[m.customer_id]:
                 first_reminder[m.customer_id] = m.sent_at
     eligible = [cid for cid, t in first_reminder.items() if now - t >= WINDOW]

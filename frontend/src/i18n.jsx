@@ -123,6 +123,9 @@ const HI = {
     "हर बिल और भुगतान स्प्रेडशीट में डाउनलोड करें (Excel या Google Sheets में खुलती है)।",
   "Download data (CSV)": "डेटा डाउनलोड करें (CSV)",
 
+  "Send on WhatsApp": "WhatsApp पर भेजें",
+  "Send reminder on WhatsApp": "WhatsApp पर याद-संदेश भेजें",
+
   // Calls
   "Customers whose dues are old enough that a call works better than another message.":
     "जिनका उधार इतना पुराना है कि अब मैसेज से बेहतर कॉल करना है।",

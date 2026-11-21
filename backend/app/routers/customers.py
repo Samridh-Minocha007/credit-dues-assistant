@@ -163,3 +163,14 @@ def send_statement(customer_id: int, db: Session = Depends(get_db)):
     msg = queue_message(db, shop, c, "statement", body)
     db.commit()
     return MessageOut.model_validate(msg)
+
+
+
+@router.post("/{customer_id}/whatsapp")
+def whatsapp_reminder(customer_id: int, db: Session = Depends(get_db)):
+    """A wa.me link with today's reminder written in, if the guardrails allow it.
+    The shopkeeper sends it from their own WhatsApp."""
+    from ..services.whatsapp import reminder_link
+
+    r = reminder_link(db, get_or_create_shop(db), _get(db, customer_id))
+    return r.__dict__

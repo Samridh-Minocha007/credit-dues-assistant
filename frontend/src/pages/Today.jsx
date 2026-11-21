@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api, rupees, shortWhen } from "../api/client.js";
+import { api, rupees, shortWhen, whatsappUrl } from "../api/client.js";
 import { IconCall, IconCheck } from "../icons.jsx";
 import { t, tx } from "../i18n.jsx";
 import VoiceEntry from "./VoiceEntry.jsx";
@@ -300,6 +300,11 @@ function AddCredit({ onSaved }) {
               total: rupees(saved.customer.balance_paise),
             })}
             <div className="small">{messageLine(saved.message)}</div>
+            {saved.message.status === "sent_sim" && (
+              <a className="btn wa-btn" href={whatsappUrl(saved.customer.phone, saved.message.body)} target="_blank" rel="noreferrer">
+                {t("Send on WhatsApp")}
+              </a>
+            )}
           </div>
         </div>
       )}

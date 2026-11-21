@@ -41,7 +41,7 @@ from .money import format_rupees
 from .payments import customer_balance
 
 CAP_WINDOW = timedelta(days=30)
-REMINDER_KINDS = ("weekly_reminder", "payday_reminder")  # both count towards the monthly limit
+REMINDER_KINDS = ("weekly_reminder", "payday_reminder", "manual_reminder")  # all count towards the monthly limit
 NUDGE_MIN_PAISE = 20000  # only suggest a part payment when Rs 200 or more is owed
 
 
@@ -116,7 +116,7 @@ def _reminders_in_window(db: Session, customer: Customer, slot: datetime) -> int
             select(Message.id).where(
                 Message.customer_id == customer.id,
                 Message.kind.in_(REMINDER_KINDS),
-                Message.status.in_(("sent_sim", "scheduled")),
+                Message.status.in_(("sent_sim", "scheduled", "sent_manual")),
                 Message.created_at > slot - CAP_WINDOW,
                 Message.created_at <= slot,
             )

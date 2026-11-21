@@ -44,7 +44,7 @@ def phone(token: str, db: Session = Depends(get_db)):
     shop = shop_of(db, c)
     # The customer only sees what actually reaches them (or will, in the
     # morning) and what they sent. Never blocked or cancelled messages.
-    visible = [m for m in c.messages if m.status in ("sent_sim", "scheduled", "received")]
+    visible = [m for m in c.messages if m.status in ("sent_sim", "sent_manual", "scheduled", "received")]
     return PhoneOut(
         shop_name=shop.name,
         customer_name=c.name,

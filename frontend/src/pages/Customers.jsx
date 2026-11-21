@@ -151,6 +151,21 @@ function CustomerDetail({ id, onBack }) {
           <a className="btn" href={c.pay_link.replace("/pay/", "/statement/")} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
             {t("View statement")}
           </a>
+          {c.balance_paise > 0 && !c.opted_out && (
+            <button
+              className="btn wa-btn"
+              onClick={async () => {
+                setError("");
+                const r = await api.whatsappReminder(c.id);
+                if (r.allowed) {
+                  window.open(r.url, "_blank", "noopener");
+                  load();
+                } else setError(r.reason);
+              }}
+            >
+              {t("Send reminder on WhatsApp")}
+            </button>
+          )}
           <button
             className="btn-text"
             onClick={async () => {
