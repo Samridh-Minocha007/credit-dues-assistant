@@ -3,7 +3,8 @@
 **Concept prototype**: a credit-dues assistant for small neighbourhood shops. Independent concept;
 not a Google product. All messages and payments are **simulated**.
 
-See [CLAUDE.md](CLAUDE.md) for the brief and [docs/decisions.md](docs/decisions.md) for design decisions.
+See [CLAUDE.md](CLAUDE.md) for the brief, [docs/integration-memo.md](docs/integration-memo.md) for the product
+recommendation, and [docs/decisions.md](docs/decisions.md) for design decisions.
 
 ## Run locally
 
