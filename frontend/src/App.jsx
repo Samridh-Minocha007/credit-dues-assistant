@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { SERVER_EVENT, api, setClockOffset } from "./api/client.js";
+import { AUTH_EVENT, SERVER_EVENT, api, setClockOffset } from "./api/client.js";
 import { t } from "./i18n.jsx";
 import { IconActivity, IconCall, IconCustomers, IconResults, IconSettings, IconToday } from "./icons.jsx";
 import Today from "./pages/Today.jsx";
@@ -10,6 +10,7 @@ import CallsPage from "./pages/Calls.jsx";
 import Results from "./pages/Results.jsx";
 import CustomerPhone from "./pages/CustomerPhone.jsx";
 import Statement from "./pages/Statement.jsx";
+import Login from "./pages/Login.jsx";
 
 // Four places for daily work, plus settings (used once, so it sits apart).
 const PLACES = [
@@ -27,6 +28,25 @@ export default function App() {
   const m = window.location.pathname.match(/^\/(pay|phone|statement)\/([\w-]+)/);
   if (m && m[1] === "statement") return <Statement token={m[2]} />;
   if (m) return <CustomerPhone token={m[2]} startOnPay={m[1] === "pay"} />;
+  return <LoginGate />;
+}
+
+// In pilot mode the shop must log in first; locally this shows the app straight away.
+function LoginGate() {
+  const [state, setState] = useState("checking"); // checking | login | app
+  const check = () =>
+    api
+      .me()
+      .then((r) => setState(r.auth_required && !r.logged_in ? "login" : "app"))
+      .catch(() => setState("app")); // server down: the app shows its own banner
+  useEffect(() => {
+    check();
+    const onAuth = () => setState("login");
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
+  }, []);
+  if (state === "checking") return null;
+  if (state === "login") return <Login onDone={() => setState("app")} />;
   return <ShopApp />;
 }
 

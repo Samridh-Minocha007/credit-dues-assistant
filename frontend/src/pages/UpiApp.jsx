@@ -38,7 +38,7 @@ export default function UpiApp({ token, onClose }) {
     setError("");
     setPaying(true);
     try {
-      await api.bankNotification({ payer_vpa: payerVpa, payer_name: payerName, amount, note: note || null });
+      await api.bankNotification({ payer_vpa: payerVpa, payee_vpa: page.shop_upi_id, payer_name: payerName, amount, note: note || null });
       setDone({ amount: Number(amount), ref: String(Math.floor(1e11 + Math.random() * 9e11)) });
     } catch (err) {
       setError(err.message);

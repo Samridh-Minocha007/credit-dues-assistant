@@ -202,6 +202,7 @@ class BankNotificationIn(BaseModel):
     shop's UPI account. Note: no customer id. Matching has to work it out."""
 
     payer_vpa: str = Field(min_length=3, max_length=100)
+    payee_vpa: str | None = Field(default=None, max_length=100)  # which shop was paid
     payer_name: str | None = Field(default=None, max_length=100)
     amount: Rupees = Field(gt=0, max_digits=10, decimal_places=2)
     note: str | None = Field(default=None, max_length=100)

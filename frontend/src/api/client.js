@@ -4,16 +4,24 @@
 // isn't running, the dev server answers with an error and no JSON; without
 // this, every screen would just sit on "Loading…" with no explanation.
 export const SERVER_EVENT = "server-status";
+export const AUTH_EVENT = "auth-required";
+
+// Pilot mode: the session token from login, kept in this browser.
+let token = localStorage.getItem("token");
+export function setToken(value) {
+  token = value;
+  if (value) localStorage.setItem("token", value);
+  else localStorage.removeItem("token");
+}
 const announce = (up) => window.dispatchEvent(new CustomEvent(SERVER_EVENT, { detail: { up } }));
 
 async function request(method, path, body) {
   let res;
   try {
-    res = await fetch(path, {
-      method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const headers = {};
+    if (body) headers["Content-Type"] = "application/json";
+    if (token) headers.Authorization = `Bearer ${token}`;
+    res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch (e) {
     announce(false);
     throw new Error("Can't reach the app server.");
@@ -24,6 +32,9 @@ async function request(method, path, body) {
     throw new Error("Can't reach the app server.");
   }
   announce(true);
+  if (res.status === 401 && !path.startsWith("/api/auth/")) {
+    window.dispatchEvent(new Event(AUTH_EVENT)); // show the login screen
+  }
   if (!res.ok) {
     // FastAPI sends {detail: "text"} for our own errors and
     // {detail: [{msg: ...}, ...]} for automatic validation errors.
@@ -35,6 +46,10 @@ async function request(method, path, body) {
 }
 
 export const api = {
+  me: () => request("GET", "/api/auth/me"),
+  login: (phone, pin) => request("POST", "/api/auth/login", { phone, pin }),
+  signup: (shop_name, phone, pin) => request("POST", "/api/auth/signup", { shop_name, phone, pin }),
+  logout: () => request("POST", "/api/auth/logout"),
   getSettings: () => request("GET", "/api/settings"),
   updateSettings: (changes) => request("PUT", "/api/settings", changes),
   approveSettings: () => request("POST", "/api/settings/approve"),

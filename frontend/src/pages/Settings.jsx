@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/client.js";
+import { api, setToken } from "../api/client.js";
 import { IconCheck } from "../icons.jsx";
 import { getLang, setLang, t } from "../i18n.jsx";
 
@@ -258,6 +258,24 @@ export default function Settings({ onSaved }) {
           </span>
         </label>
       </section>
+
+      {localStorage.getItem("token") && (
+        <section className="settings-group">
+          <h2>{t("Account")}</h2>
+          <button
+            type="button"
+            className="btn"
+            style={{ alignSelf: "flex-start" }}
+            onClick={async () => {
+              await api.logout().catch(() => {});
+              setToken(null);
+              window.location.reload();
+            }}
+          >
+            {t("Log out")}
+          </button>
+        </section>
+      )}
 
       <div className="save-bar">
         <button className="btn btn-primary">{t("Save changes")}</button>

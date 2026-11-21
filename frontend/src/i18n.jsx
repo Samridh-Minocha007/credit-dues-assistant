@@ -99,6 +99,19 @@ const HI = {
   "Send statement to customer": "ग्राहक को हिसाब भेजें",
   "Statement link sent (simulated).": "हिसाब का लिंक भेज दिया (सिम्युलेटेड)।",
 
+  "Log in to your shop": "अपनी दुकान में लॉग इन करें",
+  "Create your shop": "अपनी दुकान बनाएँ",
+  "Shop name": "दुकान का नाम",
+  "Your phone number": "आपका फ़ोन नंबर",
+  PIN: "पिन",
+  "Choose a 4–6 digit PIN": "4–6 अंकों का पिन चुनें",
+  "Log in": "लॉग इन",
+  "Create shop": "दुकान बनाएँ",
+  "New here? Create your shop": "नए हैं? अपनी दुकान बनाएँ",
+  "Already have a shop? Log in": "दुकान पहले से है? लॉग इन करें",
+  Account: "खाता",
+  "Log out": "लॉग आउट",
+
   // Calls
   "Customers whose dues are old enough that a call works better than another message.":
     "जिनका उधार इतना पुराना है कि अब मैसेज से बेहतर कॉल करना है।",

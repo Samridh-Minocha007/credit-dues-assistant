@@ -18,7 +18,7 @@ from .. import clock
 from ..schemas import PayPageOut, StatementLineOut, StatementOut
 from ..services.statement import statement_lines
 from ..services.payments import customer_balance
-from ..services.shop import get_or_create_shop
+from ..services.shop import shop_of
 from ..services.upi import payment_note, upi_link
 
 router = APIRouter(prefix="/api/pay", tags=["payment link"])
@@ -34,7 +34,7 @@ def by_token(db: Session, token: str) -> Customer:
 @router.get("/{token}", response_model=PayPageOut)
 def pay_page(token: str, db: Session = Depends(get_db)):
     c = by_token(db, token)
-    shop = get_or_create_shop(db)
+    shop = shop_of(db, c)
     bal = customer_balance(c)
     return PayPageOut(
         shop_name=shop.name,
@@ -53,7 +53,7 @@ def pay_page(token: str, db: Session = Depends(get_db)):
 def statement(token: str, db: Session = Depends(get_db)):
     """The customer's statement, opened from the link in their message."""
     c = by_token(db, token)
-    shop = get_or_create_shop(db)
+    shop = shop_of(db, c)
     return StatementOut(
         shop_name=shop.name,
         customer_name=c.name,

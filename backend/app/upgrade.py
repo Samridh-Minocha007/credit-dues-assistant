@@ -28,8 +28,13 @@ ADDED_COLUMNS = [
     ("shops", "message_language", "VARCHAR(2) NOT NULL DEFAULT 'en'"),  # Hindi messages
     ("shops", "default_credit_limit_paise", "INTEGER"),  # credit limit
     ("customers", "credit_limit_paise", "INTEGER"),  # credit limit
-    ("shops", "part_payment_nudge", "BOOLEAN NOT NULL DEFAULT 0"),  # nudge experiment
-    ("shops", "payday_reminder", "BOOLEAN NOT NULL DEFAULT 0"),  # payday experiment
+    ("shops", "part_payment_nudge", "BOOLEAN NOT NULL DEFAULT FALSE"),  # nudge experiment
+    ("shops", "payday_reminder", "BOOLEAN NOT NULL DEFAULT FALSE"),  # payday experiment
+    ("shops", "owner_phone", "VARCHAR(10)"),  # pilot login
+    ("shops", "pin_salt", "VARCHAR(32)"),  # pilot login
+    ("shops", "pin_hash", "VARCHAR(64)"),  # pilot login
+    ("shops", "failed_logins", "INTEGER NOT NULL DEFAULT 0"),  # pilot login
+    ("shops", "locked_until", "TIMESTAMP"),  # pilot login
 ]
 
 

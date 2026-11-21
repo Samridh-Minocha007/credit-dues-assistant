@@ -6,13 +6,19 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Request
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from .db import Base, SessionLocal, engine
+from .config import settings
+from .db import Base, SessionLocal, engine, get_db
+from .models import Shop
 from . import clock
-from .routers import calls, customers, dev, entries, incoming, messages, metrics, pay, settings, sim
+from .routers import auth, calls, customers, dev, entries, incoming, messages, metrics, pay, sim
+from .routers import settings as settings_router
 from .services.scheduler import run_scheduler
-from .services.shop import get_or_create_shop
+from .services.auth import shop_for_token
+from .services.shop import current_shop_id, get_or_create_shop
 from .upgrade import upgrade
 
 
@@ -32,7 +38,9 @@ async def lifespan(app: FastAPI):
 
 def _tick() -> None:
     with SessionLocal() as db:
-        run_scheduler(db, get_or_create_shop(db))
+        get_or_create_shop(db)  # make sure the local shop exists
+        for shop in db.scalars(select(Shop)).all():  # every shop's reminders
+            run_scheduler(db, shop)
 
 
 async def reminder_timer():
@@ -46,8 +54,27 @@ async def reminder_timer():
         await asyncio.sleep(60)
 
 
-app = FastAPI(title="Credit dues assistant (concept prototype)", lifespan=lifespan)
-app.include_router(settings.router)
+# Customer-facing pages opened by an unguessable link, and login itself, don't need a shop login.
+PUBLIC_PREFIXES = ("/api/auth/", "/api/pay/", "/api/sim/", "/api/health")
+
+
+async def auth_step(request: Request, db: Session = Depends(get_db)):
+    """Runs before every request: works out which shop is logged in.
+
+    It's async on purpose: the shop id it records must be visible to the
+    endpoint that runs next (see services/shop.py)."""
+    header = request.headers.get("authorization", "")
+    token = header[7:].strip() if header.lower().startswith("bearer ") else None
+    shop = shop_for_token(db, token) if token else None
+    current_shop_id.set(shop.id if shop else None)
+    path = request.url.path
+    if settings.auth_required and shop is None and path.startswith("/api/") and not path.startswith(PUBLIC_PREFIXES):
+        raise HTTPException(401, "Please log in")
+
+
+app = FastAPI(title="Credit dues assistant (concept prototype)", lifespan=lifespan, dependencies=[Depends(auth_step)])
+app.include_router(auth.router)
+app.include_router(settings_router.router)
 app.include_router(entries.router)
 app.include_router(customers.router)
 app.include_router(calls.router)

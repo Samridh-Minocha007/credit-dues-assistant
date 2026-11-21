@@ -60,6 +60,13 @@ class Shop(Base):
     part_payment_nudge: Mapped[bool] = mapped_column(Boolean, default=False)  # "even Rs X today helps"
     payday_reminder: Mapped[bool] = mapped_column(Boolean, default=False)  # extra reminder on the 1st
 
+    # Pilot login (see services/auth.py). Empty for the local single shop.
+    owner_phone: Mapped[str | None] = mapped_column(String(10), unique=True, nullable=True)
+    pin_salt: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    pin_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    failed_logins: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # When the reminder timer last ran. Each run handles every weekly slot
     # since then, so nothing is missed if the server was off for a while
     # (or the demo clock jumped ahead).
@@ -284,3 +291,14 @@ class CallOutcome(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
     customer: Mapped[Customer] = relationship(back_populates="call_outcomes")
+
+
+class ShopSession(Base):
+    """A logged-in browser. Only a hash of the token is stored."""
+
+    __tablename__ = "shop_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    shop_id: Mapped[int] = mapped_column(ForeignKey("shops.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)

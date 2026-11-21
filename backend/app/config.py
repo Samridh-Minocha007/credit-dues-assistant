@@ -22,6 +22,9 @@ class Settings:
     # Default: backend/dues.db (or backend/demo.db in demo mode), wherever the server is started from.
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DB_FILE.as_posix()}")
     demo_mode: bool = DEMO_MODE
+    # PILOT_MODE=1: every shop must log in (phone + PIN). Off locally, so
+    # development and demos work without logging in.
+    auth_required: bool = os.getenv("PILOT_MODE") == "1"
     gemini_api_key: str | None = os.getenv("GEMINI_API_KEY") or None
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     # Where the simulated payment page lives (the React app). Used to build links.
