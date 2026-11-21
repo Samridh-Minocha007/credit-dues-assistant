@@ -52,3 +52,13 @@ the app's real rules with simulated customer behaviour, so describe any numbers 
 
 See [docs/pilot.md](docs/pilot.md): login per shop, hosting on one server with Postgres, offline entry,
 data export, and what to measure.
+
+## Use it on your phone (same Wi-Fi)
+
+1. Find your computer's Wi-Fi address: run `ipconfig` and look for "IPv4 Address" (e.g. `192.168.0.27`).
+2. In `backend/.env` (git-ignored), set `PUBLIC_BASE_URL=http://<that address>:5173` so payment links open on
+   the phone, then restart the backend.
+3. Start both servers as usual. On your phone (same Wi-Fi), open `http://<that address>:5173`.
+
+Everything works except the microphone for voice entry and "Add to home screen": browsers only allow those on
+HTTPS addresses. A hosted pilot with HTTPS (see docs/pilot.md) has both.
