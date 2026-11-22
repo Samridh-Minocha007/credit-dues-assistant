@@ -3,8 +3,7 @@
 **Concept prototype**: a credit-dues assistant for small neighbourhood shops. Independent concept;
 not a Google product. All messages and payments are **simulated**.
 
-See [CLAUDE.md](CLAUDE.md) for the brief, [docs/integration-memo.md](docs/integration-memo.md) for the product
-recommendation, and [docs/decisions.md](docs/decisions.md) for design decisions.
+See [CLAUDE.md](CLAUDE.md) for the brief.
 
 ## Run locally
 
@@ -45,13 +44,14 @@ cd backend
 .venv/Scripts/python -m uvicorn app.main:app --env-file demo.env
 ```
 
-See [docs/demo-script.md](docs/demo-script.md) for a 2-minute walk-through. The data comes from replaying
+The data comes from replaying
 the app's real rules with simulated customer behaviour, so describe any numbers from it as simulated.
 
 ## Pilot with real shops
 
-See [docs/pilot.md](docs/pilot.md): login per shop, hosting on one server with Postgres, offline entry,
-data export, and what to measure.
+Set `PILOT_MODE=1` (see `backend/pilot.env`) to require each shop to log in with phone number + PIN. With
+`FRONTEND_DIST` pointing at `frontend/dist`, the backend also serves the app, so a pilot needs one server;
+`DATABASE_URL` can point at Postgres (`pip install -r requirements-pilot.txt`). Use HTTPS when hosted.
 
 ## Use it on your phone (same Wi-Fi)
 
@@ -61,4 +61,4 @@ data export, and what to measure.
 3. Start both servers as usual. On your phone (same Wi-Fi), open `http://<that address>:5173`.
 
 Everything works except the microphone for voice entry and "Add to home screen": browsers only allow those on
-HTTPS addresses. A hosted pilot with HTTPS (see docs/pilot.md) has both.
+HTTPS addresses. A hosted pilot with HTTPS has both.

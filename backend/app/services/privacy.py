@@ -3,7 +3,7 @@
 Opt-out: the customer replies STOP (or the shopkeeper taps "Stop messages").
 No more reminders or notices. Replying START turns them back on.
 
-Delete: on request, erase personal data. Owner's rule (docs/decisions.md):
+Delete: on request, erase personal data. Owner's rule:
 keep the name, amounts and dates so the shopkeeper can settle any later
 confusion; erase the phone number, item lists, message texts, replies and
 learned UPI IDs. Without a phone number the app can never contact them

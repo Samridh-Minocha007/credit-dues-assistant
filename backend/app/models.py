@@ -56,7 +56,7 @@ class Shop(Base):
     # Credit limit used for customers without their own (None = no limit).
     # A warning only: the shopkeeper decides. Not a credit score.
     default_credit_limit_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # Experiments for the next round (see docs/decisions.md):
+    # Experiments for the next round, each behind its own switch:
     part_payment_nudge: Mapped[bool] = mapped_column(Boolean, default=False)  # "even Rs X today helps"
     payday_reminder: Mapped[bool] = mapped_column(Boolean, default=False)  # extra reminder on the 1st
 
@@ -99,7 +99,7 @@ class Customer(Base):
     # can open someone else's page by changing a number in the URL.
     pay_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
     # Set when the customer's personal data is deleted on request. We keep
-    # their name, amounts and dates (owner's rule, see docs/decisions.md) and
+    # their name, amounts and dates (owner's rule, for settling later questions) and
     # erase the phone number, items, messages and UPI IDs.
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # "normal" or "disputed" (after a call where the customer disputed the
